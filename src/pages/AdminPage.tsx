@@ -1,0 +1,455 @@
+import { useEffect, useState } from 'react';
+import { Layout } from '@/components/layout/Layout';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { isAdmin } from '@/lib/adminAuth';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { 
+  Shield, 
+  Home, 
+  Users, 
+  CheckCircle2, 
+  XCircle, 
+  Eye,
+  Trash2,
+  TrendingUp,
+  Calendar,
+  MapPin,
+  Mail,
+  Phone,
+  Image as ImageIcon
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
+interface PendingHostel {
+  id: string;
+  name: string;
+  location: string;
+  address: string;
+  price: number;
+  roomType: string;
+  facilities: string[];
+  contactName: string;
+  contactEmail: string;
+  contactPhone: string;
+  description: string;
+  images: string[];
+  submittedAt: string;
+  approved: boolean;
+}
+
+export default function AdminPage() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [pendingHostels, setPendingHostels] = useState<PendingHostel[]>([]);
+  const [selectedHostel, setSelectedHostel] = useState<PendingHostel | null>(null);
+  const [actionDialog, setActionDialog] = useState<{ open: boolean; action: 'approve' | 'reject' | null }>({
+    open: false,
+    action: null,
+  });
+
+  // Mock data - replace with Firebase later
+  useEffect(() => {
+    const mockHostels: PendingHostel[] = [
+      {
+        id: '1',
+        name: 'Sunrise Student Hostel',
+        location: 'Near Lucknow University',
+        address: 'Sector 12, Aliganj, Lucknow - 226024',
+        price: 5500,
+        roomType: 'Double Sharing',
+        facilities: ['WiFi', 'AC', 'Mess', 'Laundry', 'Security'],
+        contactName: 'Rajesh Kumar',
+        contactEmail: 'rajesh@example.com',
+        contactPhone: '+91 9876543210',
+        description: 'Comfortable hostel with modern amenities near university campus',
+        images: [],
+        submittedAt: '2025-12-27T10:30:00',
+        approved: false,
+      },
+      {
+        id: '2',
+        name: 'BBD University PG',
+        location: 'Near BBD University',
+        address: 'Faizabad Road, Lucknow - 226028',
+        price: 6000,
+        roomType: 'Single Room',
+        facilities: ['WiFi', 'AC', 'Gym', 'Mess', 'CCTV'],
+        contactName: 'Priya Sharma',
+        contactEmail: 'priya@example.com',
+        contactPhone: '+91 9876543211',
+        description: 'Premium PG accommodation with excellent facilities',
+        images: [],
+        submittedAt: '2025-12-26T15:45:00',
+        approved: false,
+      },
+    ];
+    setPendingHostels(mockHostels);
+  }, []);
+
+  useEffect(() => {
+    if (!loading && (!user || !isAdmin(user.email))) {
+      toast({
+        title: 'Access Denied',
+        description: 'You do not have admin privileges',
+        variant: 'destructive',
+      });
+      navigate('/');
+    }
+  }, [user, loading, navigate, toast]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-20 text-center">
+          <p>Loading...</p>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (!user || !isAdmin(user.email)) {
+    return null;
+  }
+
+  const handleApprove = (hostel: PendingHostel) => {
+    setSelectedHostel(hostel);
+    setActionDialog({ open: true, action: 'approve' });
+  };
+
+  const handleReject = (hostel: PendingHostel) => {
+    setSelectedHostel(hostel);
+    setActionDialog({ open: true, action: 'reject' });
+  };
+
+  const confirmAction = () => {
+    if (!selectedHostel || !actionDialog.action) return;
+
+    // TODO: Implement Firebase approval/rejection
+    const action = actionDialog.action;
+    setPendingHostels(pendingHostels.filter(h => h.id !== selectedHostel.id));
+    
+    toast({
+      title: action === 'approve' ? 'Hostel Approved' : 'Hostel Rejected',
+      description: `${selectedHostel.name} has been ${action === 'approve' ? 'approved and published' : 'rejected'}`,
+    });
+
+    setActionDialog({ open: false, action: null });
+    setSelectedHostel(null);
+  };
+
+  const stats = [
+    {
+      title: 'Pending Approvals',
+      value: pendingHostels.length,
+      icon: Home,
+      color: 'text-orange-500',
+      bgColor: 'bg-orange-500/10',
+    },
+    {
+      title: 'Total Hostels',
+      value: '150+',
+      icon: TrendingUp,
+      color: 'text-blue-500',
+      bgColor: 'bg-blue-500/10',
+    },
+    {
+      title: 'Active Users',
+      value: '5,000+',
+      icon: Users,
+      color: 'text-green-500',
+      bgColor: 'bg-green-500/10',
+    },
+    {
+      title: 'Total Bookings',
+      value: '320',
+      icon: CheckCircle2,
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-500/10',
+    },
+  ];
+
+  return (
+    <Layout>
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-20">
+        <div className="container mx-auto px-4 max-w-7xl">
+          {/* Admin Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 rounded-lg bg-primary/10">
+                <Shield className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+                <p className="text-muted-foreground">Manage UniHostel platform</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Stats Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+          >
+            {stats.map((stat, index) => (
+              <Card key={index}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
+                      <p className="text-2xl font-bold">{stat.value}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                      <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </motion.div>
+
+          {/* Main Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Tabs defaultValue="approvals" className="space-y-6">
+              <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-4">
+                <TabsTrigger value="approvals">
+                  Pending Approvals
+                  {pendingHostels.length > 0 && (
+                    <Badge variant="destructive" className="ml-2 px-1.5 py-0.5 text-xs">
+                      {pendingHostels.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="hostels">All Hostels</TabsTrigger>
+                <TabsTrigger value="users">Users</TabsTrigger>
+                <TabsTrigger value="bookings">Bookings</TabsTrigger>
+              </TabsList>
+
+              {/* Pending Approvals Tab */}
+              <TabsContent value="approvals">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Pending Hostel Approvals</CardTitle>
+                    <CardDescription>
+                      Review and approve hostel listings submitted by owners
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {pendingHostels.length > 0 ? (
+                      pendingHostels.map((hostel) => (
+                        <Card key={hostel.id} className="border-l-4 border-l-orange-500">
+                          <CardContent className="pt-6">
+                            <div className="space-y-4">
+                              {/* Hostel Info */}
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h3 className="text-xl font-semibold mb-1">{hostel.name}</h3>
+                                  <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                                    <MapPin className="w-4 h-4" />
+                                    <span className="text-sm">{hostel.location}</span>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mb-2">{hostel.address}</p>
+                                </div>
+                                <Badge variant="outline" className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {new Date(hostel.submittedAt).toLocaleDateString('en-IN', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </Badge>
+                              </div>
+
+                              {/* Details Grid */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Price</p>
+                                  <p className="font-bold text-primary">₹{hostel.price.toLocaleString()}/month</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Room Type</p>
+                                  <p className="font-medium">{hostel.roomType}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs text-muted-foreground mb-1">Facilities</p>
+                                  <p className="font-medium">{hostel.facilities.length} amenities</p>
+                                </div>
+                              </div>
+
+                              {/* Contact Info */}
+                              <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
+                                <p className="text-sm font-medium">Contact Details:</p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <Users className="w-4 h-4 text-muted-foreground" />
+                                    <span>{hostel.contactName}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Mail className="w-4 h-4 text-muted-foreground" />
+                                    <span>{hostel.contactEmail}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Phone className="w-4 h-4 text-muted-foreground" />
+                                    <span>{hostel.contactPhone}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Description */}
+                              <div>
+                                <p className="text-sm font-medium mb-1">Description:</p>
+                                <p className="text-sm text-muted-foreground">{hostel.description}</p>
+                              </div>
+
+                              {/* Facilities */}
+                              <div>
+                                <p className="text-sm font-medium mb-2">Facilities:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {hostel.facilities.map((facility) => (
+                                    <Badge key={facility} variant="secondary">
+                                      {facility}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {/* Action Buttons */}
+                              <div className="flex gap-2 pt-4 border-t">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="flex-1"
+                                >
+                                  <Eye className="w-4 h-4 mr-2" />
+                                  View Details
+                                </Button>
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => handleApprove(hostel)}
+                                >
+                                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => handleReject(hostel)}
+                                >
+                                  <XCircle className="w-4 h-4 mr-2" />
+                                  Reject
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <CheckCircle2 className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">No pending approvals</p>
+                        <p className="text-sm mt-2">All hostel listings have been reviewed</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* All Hostels Tab */}
+              <TabsContent value="hostels">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>All Hostels</CardTitle>
+                    <CardDescription>Manage approved hostel listings</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">Hostel management coming soon...</p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Users Tab */}
+              <TabsContent value="users">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>User Management</CardTitle>
+                    <CardDescription>View and manage registered users</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">User management coming soon...</p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Bookings Tab */}
+              <TabsContent value="bookings">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Booking Management</CardTitle>
+                    <CardDescription>Monitor and manage hostel bookings</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground">Booking management coming soon...</p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={actionDialog.open} onOpenChange={(open) => setActionDialog({ ...actionDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {actionDialog.action === 'approve' ? 'Approve Hostel?' : 'Reject Hostel?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {actionDialog.action === 'approve'
+                ? `Are you sure you want to approve "${selectedHostel?.name}"? It will be published on the website immediately.`
+                : `Are you sure you want to reject "${selectedHostel?.name}"? The owner will be notified.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmAction}
+              className={actionDialog.action === 'reject' ? 'bg-destructive text-destructive-foreground' : ''}
+            >
+              {actionDialog.action === 'approve' ? 'Approve' : 'Reject'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Layout>
+  );
+}

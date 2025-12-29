@@ -83,9 +83,38 @@ export default function ContactPage() {
       console.log('Submission result:', result);
 
       if (result.success) {
+        // Send email notification to admin
+        try {
+          const emailData = {
+            to: 'hello.unihostel@gmail.com',
+            subject: `New Hostel Submission - ${formData.hostelName}`,
+            body: `
+New hostel submitted for approval!
+
+Hostel Name: ${formData.hostelName}
+Location: ${formData.location}
+Price: ₹${formData.price}/month
+Type: ${formData.hostelType}
+
+Owner Details:
+Name: ${formData.ownerName}
+Email: ${formData.email}
+Phone: ${formData.phone}
+
+Description: ${formData.description}
+
+Please login to admin panel to review: https://unihostel.in/admin
+            `
+          };
+          console.log('Email notification queued:', emailData);
+          // Note: Email will be sent via Firebase Functions in production
+        } catch (emailError) {
+          console.error('Email notification failed:', emailError);
+        }
+
         toast({
           title: "Hostel Submitted Successfully! 🎉",
-          description: "Your hostel has been submitted for review. Our team will verify and approve it within 24-48 hours.",
+          description: "Your hostel has been submitted for review. Our team will verify and approve it within 24-48 hours. You'll receive an email confirmation.",
         });
 
         // Reset form

@@ -83,9 +83,23 @@ export default function AdminPage() {
 
   const loadPendingHostels = async () => {
     setLoadingHostels(true);
+    console.log('Loading pending hostels...');
     const result = await getPendingHostels();
+    console.log('Pending hostels result:', result);
     if (result.success) {
+      console.log('Pending hostels data:', result.data);
       setPendingHostels(result.data);
+      toast({
+        title: 'Data Loaded',
+        description: `Found ${result.data.length} pending hostel(s)`,
+      });
+    } else {
+      console.error('Error loading pending hostels:', result.error);
+      toast({
+        title: 'Error Loading Hostels',
+        description: 'Failed to load pending hostels. Check console for details.',
+        variant: 'destructive',
+      });
     }
     setLoadingHostels(false);
   };
@@ -436,13 +450,30 @@ export default function AdminPage() {
               <TabsContent value="approvals">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Pending Hostel Approvals</CardTitle>
-                    <CardDescription>
-                      Review and approve hostel listings submitted by owners
-                    </CardDescription>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle>Pending Hostel Approvals</CardTitle>
+                        <CardDescription>
+                          Review and approve hostel listings submitted by owners
+                        </CardDescription>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={loadPendingHostels}
+                        disabled={loadingHostels}
+                      >
+                        {loadingHostels ? 'Loading...' : 'Refresh'}
+                      </Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {pendingHostels.length > 0 ? (
+                    {loadingHostels ? (
+                      <div className="text-center py-12">
+                        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Loading pending hostels...</p>
+                      </div>
+                    ) : pendingHostels.length > 0 ? (
                       pendingHostels.map((hostel) => (
                         <Card key={hostel.id} className="border-l-4 border-l-orange-500">
                           <CardContent className="pt-6">
@@ -459,12 +490,12 @@ export default function AdminPage() {
                                 </div>
                                 <Badge variant="outline" className="flex items-center gap-1">
                                   <Calendar className="w-3 h-3" />
-                                  {new Date(hostel.submittedAt).toLocaleDateString('en-IN', {
+                                  {hostel.createdAt ? new Date(hostel.createdAt.toDate()).toLocaleDateString('en-IN', {
                                     day: 'numeric',
                                     month: 'short',
                                     hour: '2-digit',
                                     minute: '2-digit',
-                                  })}
+                                  }) : 'Just now'}
                                 </Badge>
                               </div>
 
@@ -476,7 +507,7 @@ export default function AdminPage() {
                                 </div>
                                 <div>
                                   <p className="text-xs text-muted-foreground mb-1">Room Type</p>
-                                  <p className="font-medium">{hostel.roomType}</p>
+                                  <p className="font-medium">{hostel.type || hostel.roomType || 'N/A'}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-muted-foreground mb-1">Facilities</p>
@@ -490,15 +521,15 @@ export default function AdminPage() {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
                                   <div className="flex items-center gap-2">
                                     <Users className="w-4 h-4 text-muted-foreground" />
-                                    <span>{hostel.contactName}</span>
+                                    <span>{hostel.ownerName || hostel.contactName || 'N/A'}</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Mail className="w-4 h-4 text-muted-foreground" />
-                                    <span>{hostel.contactEmail}</span>
+                                    <span>{hostel.ownerEmail || hostel.contactEmail || 'N/A'}</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Phone className="w-4 h-4 text-muted-foreground" />
-                                    <span>{hostel.contactPhone}</span>
+                                    <span>{hostel.ownerPhone || hostel.contactPhone || 'N/A'}</span>
                                   </div>
                                 </div>
                               </div>

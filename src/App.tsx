@@ -15,6 +15,7 @@ import FAQPage from "./pages/FAQPage";
 import HelpCenterPage from "./pages/HelpCenterPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsPage from "./pages/TermsPage";
+import HostelDetailsPage from "./pages/HostelDetailsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/find-hostels" element={<ListingsPage />} />
+            <Route path="/hostel/:id" element={<HostelDetailsPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/profile" element={<ProfilePage />} />

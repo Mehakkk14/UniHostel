@@ -1,5 +1,8 @@
 import { Layout } from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
+import { getUserBookings } from '@/lib/bookings';
+import type { Booking } from '@/lib/bookings';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -21,6 +24,24 @@ import { motion } from 'framer-motion';
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      loadBookings();
+    }
+  }, [user]);
+
+  const loadBookings = async () => {
+    if (!user) return;
+    setLoading(true);
+    const result = await getUserBookings(user.uid);
+    if (result.success) {
+      setBookings(result.data);
+    }
+    setLoading(false);
+  };
 
   if (!user) {
     return (
@@ -31,30 +52,6 @@ export default function ProfilePage() {
       </Layout>
     );
   }
-
-  // Mock bookings data - replace with actual Firebase data later
-  const bookings = [
-    {
-      id: 1,
-      hostelName: 'Sunrise Hostel',
-      location: 'Near Lucknow University',
-      checkIn: '2025-01-15',
-      checkOut: '2025-06-15',
-      status: 'confirmed',
-      price: 5500,
-      roomType: 'Double Sharing',
-    },
-    {
-      id: 2,
-      hostelName: 'Green Valley PG',
-      location: 'Gomti Nagar',
-      checkIn: '2024-12-01',
-      checkOut: '2024-12-28',
-      status: 'completed',
-      price: 6000,
-      roomType: 'Single Room',
-    },
-  ];
 
   const joinedDate = user.metadata.creationTime 
     ? new Date(user.metadata.creationTime).toLocaleDateString('en-IN', { 
@@ -130,9 +127,18 @@ export default function ProfilePage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {bookings.length > 0 ? (
+                    {loading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Loading bookings...</p>
+                      </div>
+                    ) : bookings.length > 0 ? (
                       bookings.map((booking) => (
-                        <Card key={booking.id} className="border-l-4 border-l-primary">
+                        <Card key={booking.id} className={`border-l-4 ${
+                          booking.status === 'approved' ? 'border-l-green-500' : 
+                          booking.status === 'pending' ? 'border-l-orange-500' : 
+                          'border-l-red-500'
+                        }`}>
                           <CardContent className="pt-6">
                             <div className="flex flex-col lg:flex-row justify-between gap-4">
                               <div className="space-y-3 flex-1">
@@ -145,13 +151,16 @@ export default function ProfilePage() {
                                       <MapPin className="w-4 h-4" />
                                       <span className="text-sm">{booking.location}</span>
                                     </div>
+                                    <p className="text-xs text-muted-foreground mt-1">{booking.address}</p>
                                   </div>
                                   <Badge
-                                    variant={booking.status === 'confirmed' ? 'default' : 'secondary'}
+                                    variant={booking.status === 'approved' ? 'default' : booking.status === 'pending' ? 'secondary' : 'destructive'}
                                     className="flex items-center gap-1"
                                   >
-                                    {booking.status === 'confirmed' ? (
+                                    {booking.status === 'approved' ? (
                                       <CheckCircle2 className="w-3 h-3" />
+                                    ) : booking.status === 'pending' ? (
+                                      <Clock className="w-3 h-3" />
                                     ) : (
                                       <XCircle className="w-3 h-3" />
                                     )}
@@ -161,55 +170,42 @@ export default function ProfilePage() {
 
                                 <Separator />
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                                   <div className="flex items-center gap-2">
                                     <Home className="w-4 h-4 text-muted-foreground" />
                                     <div>
                                       <p className="text-muted-foreground text-xs">Room Type</p>
-                                      <p className="font-medium">{booking.roomType}</p>
+                                      <p className="font-medium">{booking.type}</p>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <Calendar className="w-4 h-4 text-muted-foreground" />
                                     <div>
-                                      <p className="text-muted-foreground text-xs">Check In</p>
+                                      <p className="text-muted-foreground text-xs">Booked On</p>
                                       <p className="font-medium">
-                                        {new Date(booking.checkIn).toLocaleDateString('en-IN', { 
+                                        {booking.createdAt ? new Date(booking.createdAt.toDate()).toLocaleDateString('en-IN', { 
                                           day: 'numeric', 
-                                          month: 'short' 
-                                        })}
+                                          month: 'short',
+                                          year: 'numeric'
+                                        }) : 'N/A'}
                                       </p>
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <Clock className="w-4 h-4 text-muted-foreground" />
+                                    <div className="w-4 h-4 text-primary font-bold">₹</div>
                                     <div>
-                                      <p className="text-muted-foreground text-xs">Check Out</p>
-                                      <p className="font-medium">
-                                        {new Date(booking.checkOut).toLocaleDateString('en-IN', { 
-                                          day: 'numeric', 
-                                          month: 'short' 
-                                        })}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div>
-                                      <p className="text-muted-foreground text-xs">Monthly Rent</p>
-                                      <p className="font-bold text-primary">₹{booking.price.toLocaleString()}</p>
+                                      <p className="text-muted-foreground text-xs">Price</p>
+                                      <p className="font-medium">₹{booking.price.toLocaleString()}/mo</p>
                                     </div>
                                   </div>
                                 </div>
                               </div>
 
                               <div className="flex lg:flex-col gap-2">
-                                <Button variant="outline" size="sm" className="flex-1">
-                                  View Details
-                                </Button>
-                                {booking.status === 'confirmed' && (
-                                  <Button variant="destructive" size="sm" className="flex-1">
-                                    Cancel
-                                  </Button>
+                                {booking.status === 'pending' && (
+                                  <Badge variant="secondary" className="w-full justify-center">
+                                    Waiting for Approval
+                                  </Badge>
                                 )}
                               </div>
                             </div>
@@ -221,7 +217,9 @@ export default function ProfilePage() {
                         <Home className="w-16 h-16 mx-auto mb-4 opacity-50" />
                         <p className="text-lg font-medium">No bookings yet</p>
                         <p className="text-sm mt-2">Start exploring hostels to make your first booking</p>
-                        <Button className="mt-4">Browse Hostels</Button>
+                        <Button className="mt-4" asChild>
+                          <a href="/find-hostels">Browse Hostels</a>
+                        </Button>
                       </div>
                     )}
                   </CardContent>

@@ -35,9 +35,14 @@ export default function ListingsPage() {
 
   const loadHostels = async () => {
     setLoading(true);
+    console.log('Loading hostels from Firebase...');
     const result = await getHostels();
+    console.log('Hostels result:', result);
     if (result.success) {
+      console.log('Hostels loaded:', result.data);
       setHostels(result.data);
+    } else {
+      console.error('Failed to load hostels:', result.error);
     }
     setLoading(false);
   };
@@ -272,6 +277,13 @@ export default function ListingsPage() {
               />
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={loadHostels}
+                disabled={loading}
+              >
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </Button>
               <Button
                 variant="outline"
                 className="lg:hidden"

@@ -110,10 +110,12 @@ export function HostelCard({ hostel, index = 0 }: HostelCardProps) {
         {/* Action */}
         <div className="pt-2 flex gap-2">
           <Button variant="outline" size="sm" className="flex-1" asChild>
-            <Link to={`/listings/${hostel.id}`}>View Details</Link>
+            <Link to={`/hostel/${hostel.id}`}>View Details</Link>
           </Button>
-          <Button size="sm" className="flex-1" disabled={!hostel.available}>
-            {hostel.available ? 'Book Now' : 'Waitlist'}
+          <Button size="sm" className="flex-1" disabled={!hostel.available} asChild>
+            <Link to={`/hostel/${hostel.id}`}>
+              {hostel.available ? 'Book Now' : 'Waitlist'}
+            </Link>
           </Button>
         </div>
       </div>

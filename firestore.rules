@@ -4,15 +4,28 @@ service cloud.firestore {
     
     // Hostels collection
     match /hostels/{hostelId} {
-      // Anyone can read approved hostels
+      // Anyone can read approved hostels OR admin can read all
       allow read: if resource.data.approved == true || 
                      (request.auth != null && request.auth.token.email == 'hello.unihostel@gmail.com');
       
       // ANYONE can create hostels (they go to pending approval)
-      // This allows the contact form to work without login
       allow create: if true;
       
       // Only admin can update/delete/approve
+      allow update, delete: if request.auth != null && 
+                               request.auth.token.email == 'hello.unihostel@gmail.com';
+    }
+    
+    // Bookings collection
+    match /bookings/{bookingId} {
+      // Users can read their own bookings, admin can read all
+      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) ||
+                     (request.auth != null && request.auth.token.email == 'hello.unihostel@gmail.com');
+      
+      // Authenticated users can create bookings
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Only admin can update/delete bookings
       allow update, delete: if request.auth != null && 
                                request.auth.token.email == 'hello.unihostel@gmail.com';
     }

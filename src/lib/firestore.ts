@@ -38,8 +38,7 @@ export const getHostels = async () => {
   try {
     const q = query(
       collection(db, HOSTELS_COLLECTION),
-      where('approved', '==', true),
-      orderBy('createdAt', 'desc')
+      where('approved', '==', true)
     );
     const querySnapshot = await getDocs(q);
     const hostels: Hostel[] = [];
@@ -51,6 +50,14 @@ export const getHostels = async () => {
       } as Hostel);
     });
     
+    // Sort by createdAt on client side
+    hostels.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toMillis() || 0;
+      const bTime = b.createdAt?.toMillis() || 0;
+      return bTime - aTime;
+    });
+    
+    console.log('Approved hostels loaded:', hostels.length);
     return { success: true, data: hostels };
   } catch (error) {
     console.error('Error getting hostels:', error);
@@ -165,8 +172,7 @@ export const getPendingHostels = async () => {
   try {
     const q = query(
       collection(db, HOSTELS_COLLECTION),
-      where('approved', '==', false),
-      orderBy('createdAt', 'desc')
+      where('approved', '==', false)
     );
     const querySnapshot = await getDocs(q);
     const hostels: any[] = [];
@@ -176,6 +182,13 @@ export const getPendingHostels = async () => {
         id: doc.id,
         ...doc.data()
       });
+    });
+    
+    // Sort by createdAt on client side
+    hostels.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis() || 0;
+      const bTime = b.createdAt?.toMillis() || 0;
+      return bTime - aTime;
     });
     
     return { success: true, data: hostels };
@@ -188,11 +201,7 @@ export const getPendingHostels = async () => {
 // Get all hostels (approved and pending) for admin
 export const getAllHostels = async () => {
   try {
-    const q = query(
-      collection(db, HOSTELS_COLLECTION),
-      orderBy('createdAt', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocs(collection(db, HOSTELS_COLLECTION));
     const hostels: Hostel[] = [];
     
     querySnapshot.forEach((doc) => {
@@ -200,6 +209,13 @@ export const getAllHostels = async () => {
         id: doc.id,
         ...doc.data()
       } as Hostel);
+    });
+    
+    // Sort by createdAt on client side
+    hostels.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toMillis() || 0;
+      const bTime = b.createdAt?.toMillis() || 0;
+      return bTime - aTime;
     });
     
     return { success: true, data: hostels };

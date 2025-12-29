@@ -165,10 +165,7 @@ export default function AdminPage() {
         variant: 'destructive',
       });
     }
-  }
-    ];
-    setPendingHostels(mockHostels);
-  }, []);
+  };
 
   useEffect(() => {
     if (!loading && (!user || !isAdmin(user.email))) {
@@ -247,7 +244,64 @@ export default function AdminPage() {
       title: 'Total Bookings',
       value: '320',
       icon: CheckCircle2,
-      color: 'text-purple-500',5">
+      color: 'text-purple-500',
+      bgColor: 'bg-purple-500/10',
+    },
+  ];
+
+  return (
+    <Layout>
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-20">
+        <div className="container mx-auto px-4 max-w-7xl">
+          {/* Admin Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 rounded-lg bg-primary/10">
+                <Shield className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+                <p className="text-muted-foreground">Manage UniHostel platform</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Stats Grid */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+          >
+            {stats.map((stat, index) => (
+              <Card key={index}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
+                      <p className="text-2xl font-bold">{stat.value}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                      <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </motion.div>
+
+          {/* Main Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <Tabs defaultValue="approvals" className="space-y-6">
+              <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-5">
                 <TabsTrigger value="approvals">
                   Pending Approvals
                   {pendingHostels.length > 0 && (
@@ -260,10 +314,10 @@ export default function AdminPage() {
                 <TabsTrigger value="universities">
                   <GraduationCap className="w-4 h-4 mr-1" />
                   Universities
-                
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+                </TabsTrigger>
+                <TabsTrigger value="users">Users</TabsTrigger>
+                <TabsTrigger value="bookings">Bookings</TabsTrigger>
+              </TabsList>
             className="mb-8"
           >
             <div className="flex items-center gap-3 mb-2">

@@ -1,0 +1,17 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Hostel images - anyone can read, authenticated can write
+    match /hostels/{hostelId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if true;  // Allow anyone to upload hostel images
+    }
+    
+    // Profile pictures - only owner can write
+    match /users/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Hostels collection
+    match /hostels/{hostelId} {
+      // Anyone can read approved hostels
+      allow read: if resource.data.approved == true || 
+                     (request.auth != null && request.auth.token.email == 'hello.unihostel@gmail.com');
+      
+      // ANYONE can create hostels (they go to pending approval)
+      // This allows the contact form to work without login
+      allow create: if true;
+      
+      // Only admin can update/delete/approve
+      allow update, delete: if request.auth != null && 
+                               request.auth.token.email == 'hello.unihostel@gmail.com';
+    }
+    
+    // Universities collection
+    match /universities/{universityId} {
+      // Anyone can read universities
+      allow read: if true;
+      
+      // Only admin can create/update/delete universities
+      allow create, update, delete: if request.auth != null && 
+                                       request.auth.token.email == 'hello.unihostel@gmail.com';
+    }
+    
+    // Users collection (if you add user profiles later)
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

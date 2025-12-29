@@ -105,6 +105,9 @@ export default function AdminPage() {
         images: [],
         submittedAt: '2025-12-26T15:45:00',
         approved: false,
+      },
+    ];
+    setPendingHostels(mockHostels);
     loadUniversities();
   }, []);
 

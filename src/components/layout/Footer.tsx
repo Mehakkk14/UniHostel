@@ -25,16 +25,26 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2">
-              {['Find Hostels', 'List Your Hostel', 'About Us', 'Contact'].map((item) => (
-                <li key={item}>
-                  <Link
-                    to={item === 'Find Hostels' ? '/find-hostels' : item === 'List Your Hostel' ? '/contact' : `/${item.toLowerCase().replace(' ', '-')}`}
-                    className="text-sm text-background/70 hover:text-primary transition-colors"
-                  >
-                    {item}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link to="/find-hostels" className="text-sm text-background/70 hover:text-primary transition-colors">
+                  Find Hostels
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-sm text-background/70 hover:text-primary transition-colors">
+                  List Your Hostel
+                </Link>
+              </li>
+              <li>
+                <Link to="/about" className="text-sm text-background/70 hover:text-primary transition-colors">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-sm text-background/70 hover:text-primary transition-colors">
+                  Contact
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -42,13 +52,26 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-4">Support</h4>
             <ul className="space-y-2">
-              {['FAQs', 'Help Center', 'Privacy Policy', 'Terms of Service'].map((item) => (
-                <li key={item}>
-                  <a href="#" className="text-sm text-background/70 hover:text-primary transition-colors">
-                    {item}
-                  </a>
-                </li>
-              ))}
+              <li>
+                <Link to="/faqs" className="text-sm text-background/70 hover:text-primary transition-colors">
+                  FAQs
+                </Link>
+              </li>
+              <li>
+                <Link to="/help-center" className="text-sm text-background/70 hover:text-primary transition-colors">
+                  Help Center
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="text-sm text-background/70 hover:text-primary transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="text-sm text-background/70 hover:text-primary transition-colors">
+                  Terms of Service
+                </Link>
+              </li>
             </ul>
           </div>
 

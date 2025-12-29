@@ -151,20 +151,39 @@ export default function HomePage() {
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredHostels.map((hostel, index) => (
-                <HostelCard key={hostel.id} hostel={hostel} index={index} />
-              ))}
-            </div>
+            {featuredHostels.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {featuredHostels.map((hostel, index) => (
+                    <HostelCard key={hostel.id} hostel={hostel} index={index} />
+                  ))}
+                </div>
 
-            <motion.div variants={fadeInUp} className="text-center">
-              <Button variant="outline" size="lg" asChild>
-                <Link to="/find-hostels">
-                  View All Hostels
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
-            </motion.div>
+                <motion.div variants={fadeInUp} className="text-center">
+                  <Button variant="outline" size="lg" asChild>
+                    <Link to="/find-hostels">
+                      View All Hostels
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </Button>
+                </motion.div>
+              </>
+            ) : (
+              <motion.div variants={fadeInUp} className="text-center py-16">
+                <div className="max-w-md mx-auto">
+                  <Building2 className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-xl font-semibold mb-2">No Hostels Yet</h3>
+                  <p className="text-muted-foreground mb-6">
+                    We're currently reviewing hostel submissions. Check back soon for verified accommodations!
+                  </p>
+                  <Button asChild>
+                    <Link to="/contact">
+                      List Your Hostel
+                    </Link>
+                  </Button>
+                </div>
+              </motion.div>
+            )}
           </motion.div>
         </div>
       </section>

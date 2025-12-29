@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { HostelCard } from '@/components/hostel/HostelCard';
@@ -348,11 +348,23 @@ export default function ListingsPage() {
                   <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                     <Search className="w-10 h-10 text-muted-foreground" />
                   </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">No hostels found</h3>
-                  <p className="text-muted-foreground mb-4">Try adjusting your filters to find more options</p>
-                  <Button variant="outline" onClick={clearFilters}>
-                    Clear All Filters
-                  </Button>
+                  <h3 className="text-xl font-semibold text-foreground mb-2">
+                    {hostels.length === 0 ? 'No Hostels Available Yet' : 'No hostels found'}
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    {hostels.length === 0 
+                      ? 'Hostels are being reviewed and will be listed soon. Check back later!' 
+                      : 'Try adjusting your filters to find more options'}
+                  </p>
+                  {hostels.length === 0 ? (
+                    <Button asChild>
+                      <Link to="/contact">List Your Hostel</Link>
+                    </Button>
+                  ) : (
+                    <Button variant="outline" onClick={clearFilters}>
+                      Clear All Filters
+                    </Button>
+                  )}
                 </div>
               )}
             </div>

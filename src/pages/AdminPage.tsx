@@ -71,43 +71,9 @@ export default function AdminPage() {
   const [newUniversity, setNewUniversity] = useState({ name: '', shortName: '', area: '', city: 'Lucknow' });
   const [loadingUniversities, setLoadingUniversities] = useState(false);
 
-  // Mock data - replace with Firebase later
+  // Load data from Firebase
   useEffect(() => {
-    const mockHostels: PendingHostel[] = [
-      {
-        id: '1',
-        name: 'Sunrise Student Hostel',
-        location: 'Near Lucknow University',
-        address: 'Sector 12, Aliganj, Lucknow - 226024',
-        price: 5500,
-        roomType: 'Double Sharing',
-        facilities: ['WiFi', 'AC', 'Mess', 'Laundry', 'Security'],
-        contactName: 'Rajesh Kumar',
-        contactEmail: 'rajesh@example.com',
-        contactPhone: '+91 9876543210',
-        description: 'Comfortable hostel with modern amenities near university campus',
-        images: [],
-        submittedAt: '2025-12-27T10:30:00',
-        approved: false,
-      },
-      {
-        id: '2',
-        name: 'BBD University PG',
-        location: 'Near BBD University',
-        address: 'Faizabad Road, Lucknow - 226028',
-        price: 6000,
-        roomType: 'Single Room',
-        facilities: ['WiFi', 'AC', 'Gym', 'Mess', 'CCTV'],
-        contactName: 'Priya Sharma',
-        contactEmail: 'priya@example.com',
-        contactPhone: '+91 9876543211',
-        description: 'Premium PG accommodation with excellent facilities',
-        images: [],
-        submittedAt: '2025-12-26T15:45:00',
-        approved: false,
-      },
-    ];
-    setPendingHostels(mockHostels);
+    setPendingHostels([]);
     loadUniversities();
   }, []);
 
@@ -228,21 +194,14 @@ export default function AdminPage() {
     },
     {
       title: 'Total Hostels',
-      value: '150+',
+      value: '0',
       icon: TrendingUp,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
     },
     {
-      title: 'Active Users',
-      value: '5,000+',
-      icon: Users,
-      color: 'text-green-500',
-      bgColor: 'bg-green-500/10',
-    },
-    {
       title: 'Total Bookings',
-      value: '320',
+      value: '0',
       icon: CheckCircle2,
       color: 'text-purple-500',
       bgColor: 'bg-purple-500/10',
@@ -294,68 +253,134 @@ export default function AdminPage() {
             ))}
           </motion.div>
 
-          {/* Main Content */}
+          {/* Add University Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <Tabs defaultValue="approvals" className="space-y-6">
-              <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-5">
-                <TabsTrigger value="approvals">
-                  Pending Approvals
-                  {pendingHostels.length > 0 && (
-                    <Badge variant="destructive" className="ml-2 px-1.5 py-0.5 text-xs">
-                      {pendingHostels.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="hostels">All Hostels</TabsTrigger>
-                <TabsTrigger value="universities">
-                  <GraduationCap className="w-4 h-4 mr-1" />
-                  Universities
-                </TabsTrigger>
-                <TabsTrigger value="users">Users</TabsTrigger>
-                <TabsTrigger value="bookings">Bookings</TabsTrigger>
-              </TabsList>
+            transition={{ delay: 0.15 }}
             className="mb-8"
           >
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-3 rounded-lg bg-primary/10">
-                <Shield className="w-8 h-8 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-                <p className="text-muted-foreground">Manage UniHostel platform</p>
-              </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+              {/* Add University Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Plus className="w-5 h-5" />
+                    Add New University
+                  </CardTitle>
+                  <CardDescription>
+                    Add universities to show in location filters
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleAddUniversity} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="universityName">University Name *</Label>
+                      <Input
+                        id="universityName"
+                        placeholder="e.g., Lucknow University"
+                        value={newUniversity.name}
+                        onChange={(e) => setNewUniversity({ ...newUniversity, name: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="shortName">Short Name (Optional)</Label>
+                      <Input
+                        id="shortName"
+                        placeholder="e.g., LU"
+                        value={newUniversity.shortName}
+                        onChange={(e) => setNewUniversity({ ...newUniversity, shortName: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="area">Area/Locality *</Label>
+                      <Input
+                        id="area"
+                        placeholder="e.g., Babuganj, Aliganj"
+                        value={newUniversity.area}
+                        onChange={(e) => setNewUniversity({ ...newUniversity, area: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City</Label>
+                      <Input
+                        id="city"
+                        value={newUniversity.city}
+                        onChange={(e) => setNewUniversity({ ...newUniversity, city: e.target.value })}
+                        disabled
+                      />
+                    </div>
+
+                    <Button type="submit" className="w-full">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add University
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              {/* Universities List */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Registered Universities</CardTitle>
+                  <CardDescription>
+                    {universities.length} universities in Lucknow
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loadingUniversities ? (
+                    <p className="text-center text-muted-foreground py-8">Loading...</p>
+                  ) : universities.length > 0 ? (
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {universities.map((uni) => (
+                        <div
+                          key={uni.id}
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <GraduationCap className="w-4 h-4 text-primary" />
+                              <h4 className="font-medium">{uni.name}</h4>
+                              {uni.shortName && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {uni.shortName}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                              <MapPin className="w-3 h-3" />
+                              <span>{uni.area}, {uni.city}</span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteUniversity(uni.id, uni.name)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <GraduationCap className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium">No universities added yet</p>
+                      <p className="text-sm mt-2">Add your first university using the form</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </motion.div>
 
-          {/* Stats Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-          >
-            {stats.map((stat, index) => (
-              <Card key={index}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
-                      <p className="text-2xl font-bold">{stat.value}</p>
-                    </div>
-                    <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                      <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </motion.div>
-
-          {/* Main Content */}
+          {/* Main Content - Tabs */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -372,7 +397,6 @@ export default function AdminPage() {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="hostels">All Hostels</TabsTrigger>
-                <TabsTrigger value="users">Users</TabsTrigger>
                 <TabsTrigger value="bookings">Bookings</TabsTrigger>
               </TabsList>
 
@@ -459,129 +483,7 @@ export default function AdminPage() {
                                 <div className="flex flex-wrap gap-2">
                                   {hostel.facilities.map((facility) => (
                                     <Badge key={facility} variant="secondary">
-                            
-
-              {/* Universities Tab */}
-              <TabsContent value="universities">
-                <div className="grid gap-6 lg:grid-cols-2">
-                  {/* Add University Form */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Plus className="w-5 h-5" />
-                        Add New University
-                      </CardTitle>
-                      <CardDescription>
-                        Add universities to show in location filters
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <form onSubmit={handleAddUniversity} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="universityName">University Name *</Label>
-                          <Input
-                            id="universityName"
-                            placeholder="e.g., Lucknow University"
-                            value={newUniversity.name}
-                            onChange={(e) => setNewUniversity({ ...newUniversity, name: e.target.value })}
-                            required
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="shortName">Short Name (Optional)</Label>
-                          <Input
-                            id="shortName"
-                            placeholder="e.g., LU"
-                            value={newUniversity.shortName}
-                            onChange={(e) => setNewUniversity({ ...newUniversity, shortName: e.target.value })}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="area">Area/Locality *</Label>
-                          <Input
-                            id="area"
-                            placeholder="e.g., Babuganj, Aliganj"
-                            value={newUniversity.area}
-                            onChange={(e) => setNewUniversity({ ...newUniversity, area: e.target.value })}
-                            required
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="city">City</Label>
-                          <Input
-                            id="city"
-                            value={newUniversity.city}
-                            onChange={(e) => setNewUniversity({ ...newUniversity, city: e.target.value })}
-                            disabled
-                          />
-                        </div>
-
-                        <Button type="submit" className="w-full">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add University
-                        </Button>
-                      </form>
-                    </CardContent>
-                  </Card>
-
-                  {/* Universities List */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Registered Universities</CardTitle>
-                      <CardDescription>
-                        {universities.length} universities in Lucknow
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {loadingUniversities ? (
-                        <p className="text-center text-muted-foreground py-8">Loading...</p>
-                      ) : universities.length > 0 ? (
-                        <div className="space-y-2 max-h-[500px] overflow-y-auto">
-                          {universities.map((uni) => (
-                            <div
-                              key={uni.id}
-                              className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
-                            >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <GraduationCap className="w-4 h-4 text-primary" />
-                                  <h4 className="font-medium">{uni.name}</h4>
-                                  {uni.shortName && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      {uni.shortName}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                                  <MapPin className="w-3 h-3" />
-                                  <span>{uni.area}, {uni.city}</span>
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteUniversity(uni.id, uni.name)}
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12 text-muted-foreground">
-                          <GraduationCap className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                          <p className="text-lg font-medium">No universities added yet</p>
-                          <p className="text-sm mt-2">Add your first university using the form</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>          {facility}
+                                      {facility}
                                     </Badge>
                                   ))}
                                 </div>
@@ -640,19 +542,6 @@ export default function AdminPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground">Hostel management coming soon...</p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Users Tab */}
-              <TabsContent value="users">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>User Management</CardTitle>
-                    <CardDescription>View and manage registered users</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">User management coming soon...</p>
                   </CardContent>
                 </Card>
               </TabsContent>

@@ -54,20 +54,59 @@ export default function AboutPage() {
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="space-y-6"
+              className="space-y-4"
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
                 Our Story
               </h2>
-              <div className="space-y-4 text-muted-foreground leading-relaxed">
-                <p>
-                  UniHostel was born out of a personal frustration. As students ourselves, we experienced the chaos of finding reliable accommodation near universities—endless calls, misleading photos, and surprise fees.
+              <div className="space-y-3 text-muted-foreground leading-relaxed">
+                <p className="font-semibold text-foreground text-lg">
+                  UniHostel was not planned. It was felt.
                 </p>
                 <p>
-                  In 2023, we decided to change that. We built a platform where every listing is verified, every review is genuine, and every booking is transparent. Today, UniHostel connects thousands of students with their ideal hostels across India.
+                  It was born on a night when my room was silent, books were open, and my mind was louder than ever.
+                </p>
+                <p className="font-semibold text-foreground">
+                  2 December, 3:05 AM. The night before my exam.
                 </p>
                 <p>
-                  Our team of dedicated individuals works tirelessly to ensure that your hostel search is smooth, secure, and stress-free. Because we believe every student deserves a home away from home.
+                  I was supposed to revise. Instead, I was questioning everything. <span className="italic">Am I doing enough? What if this doesn't work out? Why does life feel so uncertain?</span>
+                </p>
+                <p>
+                  That fear—every student knows it. Not just fear of exams, but fear of what comes after.
+                </p>
+                <p>
+                  In that moment, my mind drifted away from formulas and definitions, and landed on something painfully familiar: <span className="font-medium">Hostels. PGs. Living away from home.</span>
+                </p>
+                <p>
+                  I remembered students standing on roads with luggage, calling random numbers from posters, trusting fake photos on websites, accepting bad conditions because they had no choice. I remembered hostel owners too—good people, with decent places, but no way to reach genuine students.
+                </p>
+                <p className="font-medium text-foreground">
+                  Why is something so basic so complicated?
+                </p>
+                <p>
+                  That night, I didn't fight my overthinking. I listened to it. I opened my phone. My hands were shaking—not from fear, but from clarity. I typed: <span className="text-xl font-bold text-primary">UniHostel</span>
+                </p>
+                <p>
+                  At that moment, it wasn't a startup. It wasn't a business idea. <span className="font-semibold text-foreground">It was a promise I made to myself.</span>
+                </p>
+                <p>
+                  A promise that if I ever build something, it will come from real pain, not trends. From student struggles, not pitch decks.
+                </p>
+                <p>
+                  I had no money. No roadmap. No team. <span className="font-medium">Just belief.</span>
+                </p>
+                <p>
+                  Belief that students deserve clarity, safety, and dignity. Belief that trust can be built without middlemen. Belief that even a tired, overthinking student can create something meaningful.
+                </p>
+                <p>
+                  The exam next morning didn't go as planned. <span className="font-semibold text-foreground">But that night changed me.</span>
+                </p>
+                <p className="text-base">
+                  Because sometimes, life doesn't give you answers in classrooms or exams. Sometimes, it gives you a purpose at 3:05 AM.
+                </p>
+                <p className="text-lg font-semibold text-foreground pt-2">
+                  And that purpose became UniHostel.
                 </p>
               </div>
             </motion.div>
@@ -103,41 +142,36 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Mission & Vision */}
+      {/* Founder's Words */}
       <section className="py-20 bg-muted/50">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-8">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="bg-card rounded-2xl p-8 border border-border shadow-lg"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-                <Target className="w-7 h-7 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-4">Our Mission</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                To simplify the student accommodation search process by providing a trusted platform where quality, transparency, and convenience come together. We strive to connect every student with a safe, comfortable, and affordable home near their educational institution.
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="max-w-3xl mx-auto bg-card rounded-2xl p-10 border border-border shadow-lg"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 mx-auto">
+              <Heart className="w-7 h-7 text-primary" />
+            </div>
+            <h3 className="text-3xl font-bold text-foreground mb-8 text-center">Founder's Words</h3>
+            <div className="space-y-4 text-muted-foreground leading-relaxed text-center">
+              <p className="font-medium text-foreground">
+                UniHostel was born from a place of confusion, fear, and hope — the same place where most students stand today.
               </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="bg-card rounded-2xl p-8 border border-border shadow-lg"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
-                <Eye className="w-7 h-7 text-accent" />
+              <p>I didn't start UniHostel because I had everything figured out.<br />I started it because I didn't.</p>
+              <p>I've seen students struggle to find a safe place to live in a new city.<br />I've seen parents worry from miles away.<br />And I've seen honest hostel owners lose trust because of broken systems.</p>
+              <p className="font-medium text-foreground">UniHostel is my attempt to fix something I once felt helpless about.</p>
+              <p>This is not just a platform for rooms and buildings.<br />It's about belonging, clarity, and trust.</p>
+              <p>I believe students deserve transparency.<br />I believe owners deserve genuine connections.<br />And I believe ideas built with empathy last longer than those built only for profit.</p>
+              <p>UniHostel is still growing.<br />So am I.</p>
+              <p className="font-semibold text-foreground">And this journey has just begun.</p>
+              <div className="pt-6 border-t border-border mt-8">
+                <p className="font-semibold text-foreground">— Piyush Dixit</p>
+                <p className="text-sm text-muted-foreground">Founder, UniHostel</p>
               </div>
-              <h3 className="text-2xl font-bold text-foreground mb-4">Our Vision</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                To become India's most trusted student accommodation platform, where every student can find their perfect hostel within minutes. We envision a future where relocating for education is exciting, not stressful—where students focus on learning while we take care of their living.
-              </p>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 

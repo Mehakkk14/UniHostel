@@ -3,8 +3,11 @@ import { Layout } from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { isAdmin } from '@/lib/adminAuth';
+import { addUniversity, getUniversities, deleteUniversity, University } from '@/lib/universities';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -20,7 +23,9 @@ import {
   MapPin,
   Mail,
   Phone,
-  Image as ImageIcon
+  Image as ImageIcon,
+  GraduationCap,
+  Plus
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -62,6 +67,9 @@ export default function AdminPage() {
     open: false,
     action: null,
   });
+  const [universities, setUniversities] = useState<University[]>([]);
+  const [newUniversity, setNewUniversity] = useState({ name: '', shortName: '', area: '', city: 'Lucknow' });
+  const [loadingUniversities, setLoadingUniversities] = useState(false);
 
   // Mock data - replace with Firebase later
   useEffect(() => {
@@ -97,7 +105,64 @@ export default function AdminPage() {
         images: [],
         submittedAt: '2025-12-26T15:45:00',
         approved: false,
-      },
+    loadUniversities();
+  }, []);
+
+  const loadUniversities = async () => {
+    setLoadingUniversities(true);
+    const result = await getUniversities();
+    if (result.success) {
+      setUniversities(result.universities);
+    }
+    setLoadingUniversities(false);
+  };
+
+  const handleAddUniversity = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newUniversity.name.trim() || !newUniversity.area.trim()) {
+      toast({
+        title: 'Error',
+        description: 'Please fill all required fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const result = await addUniversity(newUniversity);
+    if (result.success) {
+      toast({
+        title: 'Success',
+        description: 'University added successfully',
+      });
+      setNewUniversity({ name: '', shortName: '', area: '', city: 'Lucknow' });
+      loadUniversities();
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error || 'Failed to add university',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteUniversity = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+    
+    const result = await deleteUniversity(id);
+    if (result.success) {
+      toast({
+        title: 'Success',
+        description: 'University deleted successfully',
+      });
+      loadUniversities();
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error || 'Failed to delete university',
+        variant: 'destructive',
+      });
+    }
+  }
     ];
     setPendingHostels(mockHostels);
   }, []);
@@ -179,16 +244,20 @@ export default function AdminPage() {
       title: 'Total Bookings',
       value: '320',
       icon: CheckCircle2,
-      color: 'text-purple-500',
-      bgColor: 'bg-purple-500/10',
-    },
-  ];
-
-  return (
-    <Layout>
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-20">
-        <div className="container mx-auto px-4 max-w-7xl">
-          {/* Admin Header */}
+      color: 'text-purple-500',5">
+                <TabsTrigger value="approvals">
+                  Pending Approvals
+                  {pendingHostels.length > 0 && (
+                    <Badge variant="destructive" className="ml-2 px-1.5 py-0.5 text-xs">
+                      {pendingHostels.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="hostels">All Hostels</TabsTrigger>
+                <TabsTrigger value="universities">
+                  <GraduationCap className="w-4 h-4 mr-1" />
+                  Universities
+                
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -333,7 +402,129 @@ export default function AdminPage() {
                                 <div className="flex flex-wrap gap-2">
                                   {hostel.facilities.map((facility) => (
                                     <Badge key={facility} variant="secondary">
-                                      {facility}
+                            
+
+              {/* Universities Tab */}
+              <TabsContent value="universities">
+                <div className="grid gap-6 lg:grid-cols-2">
+                  {/* Add University Form */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Plus className="w-5 h-5" />
+                        Add New University
+                      </CardTitle>
+                      <CardDescription>
+                        Add universities to show in location filters
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleAddUniversity} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="universityName">University Name *</Label>
+                          <Input
+                            id="universityName"
+                            placeholder="e.g., Lucknow University"
+                            value={newUniversity.name}
+                            onChange={(e) => setNewUniversity({ ...newUniversity, name: e.target.value })}
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="shortName">Short Name (Optional)</Label>
+                          <Input
+                            id="shortName"
+                            placeholder="e.g., LU"
+                            value={newUniversity.shortName}
+                            onChange={(e) => setNewUniversity({ ...newUniversity, shortName: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="area">Area/Locality *</Label>
+                          <Input
+                            id="area"
+                            placeholder="e.g., Babuganj, Aliganj"
+                            value={newUniversity.area}
+                            onChange={(e) => setNewUniversity({ ...newUniversity, area: e.target.value })}
+                            required
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="city">City</Label>
+                          <Input
+                            id="city"
+                            value={newUniversity.city}
+                            onChange={(e) => setNewUniversity({ ...newUniversity, city: e.target.value })}
+                            disabled
+                          />
+                        </div>
+
+                        <Button type="submit" className="w-full">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add University
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+
+                  {/* Universities List */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Registered Universities</CardTitle>
+                      <CardDescription>
+                        {universities.length} universities in Lucknow
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {loadingUniversities ? (
+                        <p className="text-center text-muted-foreground py-8">Loading...</p>
+                      ) : universities.length > 0 ? (
+                        <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                          {universities.map((uni) => (
+                            <div
+                              key={uni.id}
+                              className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <GraduationCap className="w-4 h-4 text-primary" />
+                                  <h4 className="font-medium">{uni.name}</h4>
+                                  {uni.shortName && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {uni.shortName}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
+                                  <MapPin className="w-3 h-3" />
+                                  <span>{uni.area}, {uni.city}</span>
+                                </div>
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteUniversity(uni.id, uni.name)}
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12 text-muted-foreground">
+                          <GraduationCap className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                          <p className="text-lg font-medium">No universities added yet</p>
+                          <p className="text-sm mt-2">Add your first university using the form</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>          {facility}
                                     </Badge>
                                   ))}
                                 </div>

@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { SearchBar } from '@/components/search/SearchBar';
 import { HostelCard } from '@/components/hostel/HostelCard';
 import { Layout } from '@/components/layout/Layout';
-import { hostels } from '@/data/hostels';
+import { getHostels } from '@/lib/firestore';
+import type { Hostel } from '@/data/hostels';
+import { useState, useEffect } from 'react';
 import { 
   Search, 
   GitCompare, 
@@ -35,6 +37,22 @@ const staggerContainer = {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [hostels, setHostels] = useState<Hostel[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadHostels();
+  }, []);
+
+  const loadHostels = async () => {
+    setLoading(true);
+    const result = await getHostels();
+    if (result.success) {
+      setHostels(result.data);
+    }
+    setLoading(false);
+  };
+
   const featuredHostels = hostels.slice(0, 3);
 
   const handleSearch = (filters: { location: string; priceRange: string; hostelType: string }) => {

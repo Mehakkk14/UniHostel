@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { isAdmin } from '@/lib/adminAuth';
 import { addUniversity, getUniversities, deleteUniversity, University } from '@/lib/universities';
+import { getPendingHostels, getAllHostels, approveHostel, rejectHostel, deleteHostel } from '@/lib/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -70,12 +71,31 @@ export default function AdminPage() {
   const [universities, setUniversities] = useState<University[]>([]);
   const [newUniversity, setNewUniversity] = useState({ name: '', shortName: '', area: '', city: 'Lucknow' });
   const [loadingUniversities, setLoadingUniversities] = useState(false);
+  const [allHostels, setAllHostels] = useState<any[]>([]);
+  const [loadingHostels, setLoadingHostels] = useState(false);
 
   // Load data from Firebase
   useEffect(() => {
-    setPendingHostels([]);
+    loadPendingHostels();
+    loadAllHostels();
     loadUniversities();
   }, []);
+
+  const loadPendingHostels = async () => {
+    setLoadingHostels(true);
+    const result = await getPendingHostels();
+    if (result.success) {
+      setPendingHostels(result.data);
+    }
+    setLoadingHostels(false);
+  };
+
+  const loadAllHostels = async () => {
+    const result = await getAllHostels();
+    if (result.success) {
+      setAllHostels(result.data);
+    }
+  };
 
   const loadUniversities = async () => {
     setLoadingUniversities(true);
@@ -168,17 +188,29 @@ export default function AdminPage() {
     setActionDialog({ open: true, action: 'reject' });
   };
 
-  const confirmAction = () => {
+  const confirmAction = async () => {
     if (!selectedHostel || !actionDialog.action) return;
 
-    // TODO: Implement Firebase approval/rejection
     const action = actionDialog.action;
-    setPendingHostels(pendingHostels.filter(h => h.id !== selectedHostel.id));
+    const result = action === 'approve' 
+      ? await approveHostel(selectedHostel.id)
+      : await rejectHostel(selectedHostel.id);
     
-    toast({
-      title: action === 'approve' ? 'Hostel Approved' : 'Hostel Rejected',
-      description: `${selectedHostel.name} has been ${action === 'approve' ? 'approved and published' : 'rejected'}`,
-    });
+    if (result.success) {
+      toast({
+        title: action === 'approve' ? 'Hostel Approved' : 'Hostel Rejected',
+        description: `${selectedHostel.name} has been ${action === 'approve' ? 'approved and published' : 'rejected'}`,
+      });
+      // Reload both lists
+      loadPendingHostels();
+      loadAllHostels();
+    } else {
+      toast({
+        title: 'Error',
+        description: 'Failed to process hostel',
+        variant: 'destructive',
+      });
+    }
 
     setActionDialog({ open: false, action: null });
     setSelectedHostel(null);
@@ -194,7 +226,7 @@ export default function AdminPage() {
     },
     {
       title: 'Total Hostels',
-      value: '0',
+      value: allHostels.filter(h => h.approved).length,
       icon: TrendingUp,
       color: 'text-blue-500',
       bgColor: 'bg-blue-500/10',
@@ -538,10 +570,56 @@ export default function AdminPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>All Hostels</CardTitle>
-                    <CardDescription>Manage approved hostel listings</CardDescription>
+                    <CardDescription>Manage approved hostel listings ({allHostels.filter(h => h.approved).length} active)</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground">Hostel management coming soon...</p>
+                    {allHostels.filter(h => h.approved).length > 0 ? (
+                      <div className="space-y-4">
+                        {allHostels.filter(h => h.approved).map((hostel) => (
+                          <Card key={hostel.id}>
+                            <CardContent className="p-6">
+                              <div className="flex justify-between items-start">
+                                <div className="space-y-2">
+                                  <h3 className="font-semibold text-lg">{hostel.name}</h3>
+                                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="w-4 h-4" />
+                                      {hostel.location}
+                                    </span>
+                                    <Badge variant="secondary">{hostel.type || 'N/A'}</Badge>
+                                    <span className="font-medium text-foreground">₹{hostel.price}/month</span>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground line-clamp-2">{hostel.description}</p>
+                                </div>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={async () => {
+                                    if (confirm(`Are you sure you want to delete ${hostel.name}?`)) {
+                                      const result = await deleteHostel(hostel.id);
+                                      if (result.success) {
+                                        toast({ title: 'Success', description: 'Hostel deleted successfully' });
+                                        loadAllHostels();
+                                      } else {
+                                        toast({ title: 'Error', description: 'Failed to delete hostel', variant: 'destructive' });
+                                      }
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Home className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">No hostels yet</p>
+                        <p className="text-sm mt-2">Approved hostels will appear here</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -554,7 +632,11 @@ export default function AdminPage() {
                     <CardDescription>Monitor and manage hostel bookings</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground">Booking management coming soon...</p>
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium">No bookings yet</p>
+                      <p className="text-sm mt-2">Booking system will be integrated soon</p>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>

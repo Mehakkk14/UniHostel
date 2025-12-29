@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Layout } from '@/components/layout/Layout';
 import { HostelCard } from '@/components/hostel/HostelCard';
-import { hostels, locations, facilityLabels } from '@/data/hostels';
+import { locations, facilityLabels } from '@/data/hostels';
+import { getHostels } from '@/lib/firestore';
+import type { Hostel } from '@/data/hostels';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -23,6 +25,22 @@ export default function ListingsPage() {
   const [searchParams] = useSearchParams();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [hostels, setHostels] = useState<Hostel[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load hostels from Firebase
+  useEffect(() => {
+    loadHostels();
+  }, []);
+
+  const loadHostels = async () => {
+    setLoading(true);
+    const result = await getHostels();
+    if (result.success) {
+      setHostels(result.data);
+    }
+    setLoading(false);
+  };
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -212,21 +230,30 @@ export default function ListingsPage() {
 
   return (
     <Layout>
-      {/* Header */}
-      <section className="bg-gradient-to-b from-primary/5 to-background py-12">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl"
-          >
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-              Find Your Ideal Hostel in Lucknow
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Browse {hostels.length} verified hostels in Lucknow
-            </p>
-          </motion.div>
+      {loading ? (
+        <div className="container mx-auto px-4 py-20 text-center">
+          <div className="animate-pulse space-y-4">
+            <div className="w-16 h-16 bg-muted rounded-full mx-auto"></div>
+            <p className="text-muted-foreground">Loading hostels...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Header */}
+          <section className="bg-gradient-to-b from-primary/5 to-background py-12">
+            <div className="container mx-auto px-4">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-2xl"
+              >
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+                  Find Your Ideal Hostel in Lucknow
+                </h1>
+                <p className="text-muted-foreground mt-2">
+                  Browse {hostels.length} verified hostels in Lucknow
+                </p>
+              </motion.div>
 
           {/* Search Bar */}
           <motion.div
@@ -371,6 +398,8 @@ export default function ListingsPage() {
           </div>
         </div>
       </section>
+      </>
+      )}
     </Layout>
   );
 }

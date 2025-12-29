@@ -159,3 +159,79 @@ export const searchHostels = async (searchTerm: string) => {
     return { success: false, error };
   }
 };
+
+// Get pending hostels (for admin approval)
+export const getPendingHostels = async () => {
+  try {
+    const q = query(
+      collection(db, HOSTELS_COLLECTION),
+      where('approved', '==', false),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    const hostels: any[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      hostels.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    return { success: true, data: hostels };
+  } catch (error) {
+    console.error('Error getting pending hostels:', error);
+    return { success: false, error };
+  }
+};
+
+// Get all hostels (approved and pending) for admin
+export const getAllHostels = async () => {
+  try {
+    const q = query(
+      collection(db, HOSTELS_COLLECTION),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    const hostels: Hostel[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      hostels.push({
+        id: doc.id,
+        ...doc.data()
+      } as Hostel);
+    });
+    
+    return { success: true, data: hostels };
+  } catch (error) {
+    console.error('Error getting all hostels:', error);
+    return { success: false, error };
+  }
+};
+
+// Approve a hostel
+export const approveHostel = async (id: string) => {
+  try {
+    const docRef = doc(db, HOSTELS_COLLECTION, id);
+    await updateDoc(docRef, {
+      approved: true,
+      approvedAt: Timestamp.now(),
+      updatedAt: Timestamp.now()
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error approving hostel:', error);
+    return { success: false, error };
+  }
+};
+
+// Reject and delete a hostel
+export const rejectHostel = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, HOSTELS_COLLECTION, id));
+    return { success: true };
+  } catch (error) {
+    console.error('Error rejecting hostel:', error);
+    return { success: false, error };
+  }
+};

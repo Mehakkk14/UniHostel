@@ -21,7 +21,8 @@ const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/find-hostels', label: 'Find Hostels' },
   { href: '/about', label: 'About' },
-  { href: '/contact', label: 'List Your Hostel' },
+  { href: '/contact', label: 'Contact' },
+  { href: '/list-hostel', label: 'List Your Hostel' },
 ];
 
 export function Navbar() {

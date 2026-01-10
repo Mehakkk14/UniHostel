@@ -260,7 +260,7 @@ export default function AboutPage() {
                 ))}
               </ul>
               <Button variant="secondary" className="bg-card text-primary hover:bg-card/90" asChild>
-                <Link to="/listings">
+                <Link to="/find-hostels">
                   Find Your Hostel
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
@@ -289,7 +289,7 @@ export default function AboutPage() {
                 ))}
               </ul>
               <Button variant="secondary" className="bg-card text-primary hover:bg-card/90" asChild>
-                <Link to="/contact">
+                <Link to="/list-hostel">
                   List Your Hostel
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>

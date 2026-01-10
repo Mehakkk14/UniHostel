@@ -9,6 +9,7 @@ import HomePage from "./pages/HomePage";
 import ListingsPage from "./pages/ListingsPage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
+import ListHostelPage from "./pages/ListHostelPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 import FAQPage from "./pages/FAQPage";
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/hostel/:id" element={<HostelDetailsPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
+            <Route path="/list-hostel" element={<ListHostelPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/faqs" element={<FAQPage />} />

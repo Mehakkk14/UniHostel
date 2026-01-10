@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { addContactMessage } from '@/lib/firestore';
 import { 
   Mail, 
   Phone, 
@@ -30,22 +31,32 @@ export default function ContactPage() {
     setIsSubmitting(true);
 
     try {
-      // Simulate sending email/message
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: "Message Sent! 📧",
-        description: "We'll get back to you within 24 hours.",
+      // Save message to Firestore
+      const result = await addContactMessage({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        subject: formData.subject,
+        message: formData.message
       });
 
-      // Reset form
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        subject: '',
-        message: ''
-      });
+      if (result.success) {
+        toast({
+          title: "Message Sent! 📧",
+          description: "We've received your message and will get back to you within 24 hours.",
+        });
+
+        // Reset form
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          subject: '',
+          message: ''
+        });
+      } else {
+        throw new Error('Failed to send message');
+      }
     } catch (error) {
       toast({
         title: "Error",

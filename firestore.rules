@@ -40,6 +40,20 @@ service cloud.firestore {
                                        request.auth.token.email == 'hello.unihostel@gmail.com';
     }
     
+    // Contact Messages collection
+    match /contactMessages/{messageId} {
+      // Only admin can read messages
+      allow read: if request.auth != null && 
+                     request.auth.token.email == 'hello.unihostel@gmail.com';
+      
+      // Anyone can create messages (contact form is public)
+      allow create: if true;
+      
+      // Only admin can update/delete messages
+      allow update, delete: if request.auth != null && 
+                               request.auth.token.email == 'hello.unihostel@gmail.com';
+    }
+    
     // Users collection (if you add user profiles later)
     match /users/{userId} {
       allow read: if request.auth != null;

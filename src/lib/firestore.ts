@@ -251,3 +251,80 @@ export const rejectHostel = async (id: string) => {
     return { success: false, error };
   }
 };
+
+// Contact Messages Collection
+const CONTACT_MESSAGES_COLLECTION = 'contactMessages';
+
+export interface ContactMessage {
+  id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  createdAt?: any;
+  read?: boolean;
+}
+
+// Add a contact message
+export const addContactMessage = async (messageData: Omit<ContactMessage, 'id' | 'createdAt' | 'read'>) => {
+  try {
+    const docRef = await addDoc(collection(db, CONTACT_MESSAGES_COLLECTION), {
+      ...messageData,
+      createdAt: Timestamp.now(),
+      read: false
+    });
+    return { success: true, id: docRef.id };
+  } catch (error) {
+    console.error('Error adding contact message:', error);
+    return { success: false, error };
+  }
+};
+
+// Get all contact messages
+export const getContactMessages = async () => {
+  try {
+    const q = query(
+      collection(db, CONTACT_MESSAGES_COLLECTION),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    const messages: ContactMessage[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      messages.push({
+        id: doc.id,
+        ...doc.data()
+      } as ContactMessage);
+    });
+    
+    return { success: true, data: messages };
+  } catch (error) {
+    console.error('Error getting contact messages:', error);
+    return { success: false, error };
+  }
+};
+
+// Mark contact message as read
+export const markMessageAsRead = async (id: string) => {
+  try {
+    await updateDoc(doc(db, CONTACT_MESSAGES_COLLECTION, id), {
+      read: true
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error marking message as read:', error);
+    return { success: false, error };
+  }
+};
+
+// Delete contact message
+export const deleteContactMessage = async (id: string) => {
+  try {
+    await deleteDoc(doc(db, CONTACT_MESSAGES_COLLECTION, id));
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    return { success: false, error };
+  }
+};

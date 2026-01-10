@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { isAdmin } from '@/lib/adminAuth';
 import { addUniversity, getUniversities, deleteUniversity, University } from '@/lib/universities';
-import { getPendingHostels, getAllHostels, approveHostel, rejectHostel, deleteHostel } from '@/lib/firestore';
+import { getPendingHostels, getAllHostels, approveHostel, rejectHostel, deleteHostel, getContactMessages, markMessageAsRead, deleteContactMessage, type ContactMessage } from '@/lib/firestore';
 import { getAllBookings, approveBooking, rejectBooking, type Booking } from '@/lib/bookings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,8 @@ import {
   Phone,
   Image as ImageIcon,
   GraduationCap,
-  Plus
+  Plus,
+  MessageSquare
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -81,6 +82,8 @@ export default function AdminPage() {
   const [loadingHostels, setLoadingHostels] = useState(false);
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(false);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   // Load data from Firebase
   useEffect(() => {
@@ -88,6 +91,7 @@ export default function AdminPage() {
     loadAllHostels();
     loadUniversities();
     loadBookings();
+    loadContactMessages();
   }, []);
 
   const loadPendingHostels = async () => {
@@ -129,6 +133,17 @@ export default function AdminPage() {
       console.error('Error loading bookings:', result.error);
     }
     setLoadingBookings(false);
+  };
+
+  const loadContactMessages = async () => {
+    setLoadingMessages(true);
+    const result = await getContactMessages();
+    if (result.success) {
+      setContactMessages(result.data);
+    } else {
+      console.error('Error loading contact messages:', result.error);
+    }
+    setLoadingMessages(false);
   };
 
   const loadUniversities = async () => {
@@ -453,7 +468,7 @@ export default function AdminPage() {
             transition={{ delay: 0.2 }}
           >
             <Tabs defaultValue="approvals" className="space-y-6">
-              <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-4">
+              <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-5">
                 <TabsTrigger value="approvals">
                   Pending Approvals
                   {pendingHostels.length > 0 && (
@@ -464,6 +479,15 @@ export default function AdminPage() {
                 </TabsTrigger>
                 <TabsTrigger value="hostels">All Hostels</TabsTrigger>
                 <TabsTrigger value="bookings">Bookings</TabsTrigger>
+                <TabsTrigger value="messages">
+                  Messages
+                  {contactMessages.filter(m => !m.read).length > 0 && (
+                    <Badge variant="destructive" className="ml-2 px-1.5 py-0.5 text-xs">
+                      {contactMessages.filter(m => !m.read).length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="universities">Universities</TabsTrigger>
               </TabsList>
 
               {/* Pending Approvals Tab */}
@@ -786,6 +810,132 @@ export default function AdminPage() {
                         <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
                         <p className="text-lg font-medium">No bookings yet</p>
                         <p className="text-sm mt-2">Bookings will appear here once students start booking hostels</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Contact Messages Tab */}
+              <TabsContent value="messages">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <MessageSquare className="w-5 h-5" />
+                          Contact Messages
+                        </CardTitle>
+                        <CardDescription>Messages from contact form</CardDescription>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={loadContactMessages}
+                        disabled={loadingMessages}
+                      >
+                        {loadingMessages ? 'Loading...' : 'Refresh'}
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {contactMessages.length > 0 ? (
+                      <div className="space-y-4">
+                        {contactMessages.map((message) => (
+                          <Card key={message.id} className={message.read ? 'opacity-70' : 'border-primary'}>
+                            <CardContent className="pt-6">
+                              <div className="space-y-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="font-semibold text-lg">{message.name}</h4>
+                                      {!message.read && (
+                                        <Badge variant="default" className="text-xs">New</Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground font-medium">{message.subject}</p>
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {message.createdAt?.toDate().toLocaleString()}
+                                  </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <div className="flex items-center gap-4 text-sm">
+                                    <div className="flex items-center gap-1.5">
+                                      <Mail className="w-4 h-4 text-muted-foreground" />
+                                      <a href={`mailto:${message.email}`} className="text-primary hover:underline">
+                                        {message.email}
+                                      </a>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <Phone className="w-4 h-4 text-muted-foreground" />
+                                      <a href={`tel:${message.phone}`} className="hover:underline">
+                                        {message.phone}
+                                      </a>
+                                    </div>
+                                  </div>
+
+                                  <div className="bg-muted/50 rounded-lg p-4 border">
+                                    <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                                  </div>
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={async () => {
+                                      if (message.id) {
+                                        await markMessageAsRead(message.id);
+                                        loadContactMessages();
+                                        toast({
+                                          title: 'Message marked as read',
+                                        });
+                                      }
+                                    }}
+                                    disabled={message.read}
+                                  >
+                                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                                    {message.read ? 'Read' : 'Mark as Read'}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      window.location.href = `mailto:${message.email}?subject=Re: ${message.subject}`;
+                                    }}
+                                  >
+                                    <Mail className="w-4 h-4 mr-1" />
+                                    Reply via Email
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={async () => {
+                                      if (message.id && confirm('Delete this message?')) {
+                                        await deleteContactMessage(message.id);
+                                        loadContactMessages();
+                                        toast({
+                                          title: 'Message deleted',
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-1" />
+                                    Delete
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">No messages yet</p>
+                        <p className="text-sm mt-2">Messages from the contact form will appear here</p>
                       </div>
                     )}
                   </CardContent>

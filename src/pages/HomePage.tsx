@@ -108,7 +108,7 @@ export default function HomePage() {
                   </Link>
                 </Button>
                 <Button variant="heroOutline" size="xl" asChild>
-                  <Link to="/contact">
+                  <Link to="/list-hostel">
                     List Your Hostel
                   </Link>
                 </Button>
@@ -195,7 +195,7 @@ export default function HomePage() {
                     We're currently reviewing hostel submissions. Check back soon for verified accommodations!
                   </p>
                   <Button asChild>
-                    <Link to="/contact">
+                    <Link to="/list-hostel">
                       List Your Hostel
                     </Link>
                   </Button>

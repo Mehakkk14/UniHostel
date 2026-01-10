@@ -383,7 +383,7 @@ export default function HomePage() {
               className="bg-card text-primary hover:bg-card/90"
               asChild
             >
-              <Link to="/contact">
+              <Link to="/list-hostel">
                 List Your Hostel for Free
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Link>

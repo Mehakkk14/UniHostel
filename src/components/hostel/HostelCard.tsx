@@ -40,9 +40,12 @@ export function HostelCard({ hostel, index = 0 }: HostelCardProps) {
       {/* Image */}
       <div className="relative h-48 overflow-hidden">
         <img
-          src={hostel.images[0]}
+          src={hostel.images && hostel.images.length > 0 ? hostel.images[0] : '/placeholder.svg'}
           alt={hostel.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/placeholder.svg';
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent" />
         

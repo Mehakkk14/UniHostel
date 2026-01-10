@@ -60,6 +60,38 @@ export default function ContactPage() {
     try {
       console.log('Starting form submission...');
       
+      // Convert images to base64
+      const convertToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = error => reject(error);
+        });
+      };
+      
+      let base64Images: string[] = [];
+      if (selectedImages.length > 0) {
+        toast({
+          title: "Processing images...",
+          description: `Converting ${selectedImages.length} image(s)`,
+        });
+        
+        try {
+          base64Images = await Promise.all(
+            selectedImages.map(file => convertToBase64(file))
+          );
+          console.log('Images converted to base64');
+        } catch (error) {
+          console.error('Image conversion failed:', error);
+          toast({
+            title: "Warning",
+            description: "Some images failed to process",
+            variant: "destructive"
+          });
+        }
+      }
+      
       // Prepare hostel data
       const hostelData = {
         name: formData.hostelName,
@@ -69,7 +101,7 @@ export default function ContactPage() {
         rating: 0,
         reviews: 0,
         type: formData.hostelType as 'boys' | 'girls' | 'coed',
-        images: [], // Will be added later with image upload
+        images: base64Images,
         facilities: formData.facilities,
         description: formData.description,
         available: true,
@@ -168,15 +200,27 @@ Please login to admin panel to review: https://unihostel.in/admin
     const files = e.target.files;
     if (files) {
       const fileArray = Array.from(files);
-      // Limit to 10 images
-      if (fileArray.length + selectedImages.length > 10) {
+      // Limit to 5 images (base64 takes more space)
+      if (fileArray.length + selectedImages.length > 5) {
         toast({
           title: "Too many images",
-          description: "You can upload maximum 10 photos",
+          description: "You can upload maximum 5 photos",
           variant: "destructive"
         });
         return;
       }
+      
+      // Check file sizes (max 500KB per image for base64)
+      const oversizedFiles = fileArray.filter(file => file.size > 500 * 1024);
+      if (oversizedFiles.length > 0) {
+        toast({
+          title: "Images too large",
+          description: "Please compress images to under 500KB each",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       setSelectedImages(prev => [...prev, ...fileArray]);
     }
   };
@@ -385,7 +429,14 @@ Please login to admin panel to review: https://unihostel.in/admin
 
                 {/* Photos */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-foreground">Hostel Photos</h3>
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Upload className="w-5 h-5 text-primary" />
+                    Hostel Photos
+                  </h3>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+                    <p className="text-amber-900">📸 <strong>Important:</strong> Compress images before uploading</p>
+                    <p className="text-amber-800 text-xs mt-1">Max 5 images, each under 500KB. Use <a href="https://tinypng.com" target="_blank" rel="noopener" className="text-primary hover:underline">TinyPNG</a> to compress.</p>
+                  </div>
                   
                   {/* Upload Area */}
                   <label 
@@ -395,7 +446,7 @@ Please login to admin panel to review: https://unihostel.in/admin
                     <input
                       id="photo-upload"
                       type="file"
-                      accept="image/png,image/jpeg,image/jpg"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
                       multiple
                       className="hidden"
                       onChange={handleImageChange}
@@ -405,7 +456,7 @@ Please login to admin panel to review: https://unihostel.in/admin
                       <span className="text-primary font-medium">Click to upload</span> or drag and drop
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      PNG, JPG up to 5MB (max 10 photos)
+                      PNG, JPG, WebP (max 500KB each, 5 images max)
                     </p>
                   </label>
 
@@ -419,6 +470,9 @@ Please login to admin panel to review: https://unihostel.in/admin
                             alt={`Preview ${index + 1}`}
                             className="w-full h-24 object-cover rounded-lg"
                           />
+                          <div className="absolute bottom-1 left-1 right-1 bg-black/70 text-white text-xs px-1 py-0.5 rounded text-center">
+                            {(file.size / 1024).toFixed(0)}KB
+                          </div>
                           <button
                             type="button"
                             onClick={() => removeImage(index)}

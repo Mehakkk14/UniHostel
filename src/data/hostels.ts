@@ -12,6 +12,7 @@ export interface Hostel {
   description: string;
   available: boolean;
   distance: string;
+  googleMapLink?: string;
 }
 
 export const hostels: Hostel[] = [];

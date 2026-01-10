@@ -139,15 +139,17 @@ export default function ListingsPage() {
       {/* Price Range */}
       <div className="space-y-3">
         <Label className="text-sm font-semibold">Price Range (₹/month)</Label>
-        <Slider
-          value={priceRange}
-          onValueChange={(value) => setPriceRange(value as [number, number])}
-          min={2000}
-          max={15000}
-          step={50}
-          minStepsBetweenThumbs={1}
-          className="mt-2"
-        />
+        <div className="pt-4 pb-2">
+          <Slider
+            value={priceRange}
+            onValueChange={(value) => setPriceRange(value as [number, number])}
+            min={2000}
+            max={15000}
+            step={100}
+            minStepsBetweenThumbs={1}
+            className="cursor-pointer"
+          />
+        </div>
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>₹{priceRange[0].toLocaleString()}</span>
           <span>₹{priceRange[1].toLocaleString()}</span>

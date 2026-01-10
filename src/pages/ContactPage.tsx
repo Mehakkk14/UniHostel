@@ -47,7 +47,8 @@ export default function ContactPage() {
     price: '',
     hostelType: '',
     facilities: [] as string[],
-    description: ''
+    description: '',
+    googleMapLink: ''
   });
   const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
@@ -75,6 +76,7 @@ export default function ContactPage() {
         ownerName: formData.ownerName,
         ownerEmail: formData.email,
         ownerPhone: formData.phone,
+        googleMapLink: formData.googleMapLink,
       };
 
       console.log('Hostel data:', hostelData);
@@ -128,7 +130,8 @@ Please login to admin panel to review: https://unihostel.in/admin
           price: '',
           hostelType: '',
           facilities: [],
-          description: ''
+          description: '',
+          googleMapLink: ''
         });
         setSelectedImages([]);
       } else {
@@ -296,6 +299,17 @@ Please login to admin panel to review: https://unihostel.in/admin
                       onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
                       required
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="googleMapLink">Google Maps Link</Label>
+                    <Input
+                      id="googleMapLink"
+                      type="url"
+                      placeholder="https://maps.google.com/?q=..."
+                      value={formData.googleMapLink}
+                      onChange={(e) => setFormData(prev => ({ ...prev, googleMapLink: e.target.value }))}
+                    />
+                    <p className="text-xs text-muted-foreground">Share Google Maps link of your hostel location (optional)</p>
                   </div>
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">

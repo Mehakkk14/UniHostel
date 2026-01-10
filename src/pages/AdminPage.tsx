@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { isAdmin } from '@/lib/adminAuth';
 import { addUniversity, getUniversities, deleteUniversity, University } from '@/lib/universities';
 import { getPendingHostels, getAllHostels, approveHostel, rejectHostel, deleteHostel } from '@/lib/firestore';
+import { getAllBookings, approveBooking, rejectBooking, type Booking } from '@/lib/bookings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,14 +48,19 @@ interface PendingHostel {
   location: string;
   address: string;
   price: number;
+  type?: string;
   roomType: string;
   facilities: string[];
   contactName: string;
   contactEmail: string;
   contactPhone: string;
+  ownerName?: string;
+  ownerEmail?: string;
+  ownerPhone?: string;
   description: string;
   images: string[];
   submittedAt: string;
+  createdAt?: any;
   approved: boolean;
 }
 
@@ -73,12 +79,15 @@ export default function AdminPage() {
   const [loadingUniversities, setLoadingUniversities] = useState(false);
   const [allHostels, setAllHostels] = useState<any[]>([]);
   const [loadingHostels, setLoadingHostels] = useState(false);
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(false);
 
   // Load data from Firebase
   useEffect(() => {
     loadPendingHostels();
     loadAllHostels();
     loadUniversities();
+    loadBookings();
   }, []);
 
   const loadPendingHostels = async () => {
@@ -109,6 +118,17 @@ export default function AdminPage() {
     if (result.success) {
       setAllHostels(result.data);
     }
+  };
+
+  const loadBookings = async () => {
+    setLoadingBookings(true);
+    const result = await getAllBookings();
+    if (result.success) {
+      setAllBookings(result.data);
+    } else {
+      console.error('Error loading bookings:', result.error);
+    }
+    setLoadingBookings(false);
   };
 
   const loadUniversities = async () => {
@@ -660,14 +680,114 @@ export default function AdminPage() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Booking Management</CardTitle>
-                    <CardDescription>Monitor and manage hostel bookings</CardDescription>
+                    <CardDescription>Monitor and manage hostel bookings ({allBookings.length} total)</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-center py-12 text-muted-foreground">
-                      <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-medium">No bookings yet</p>
-                      <p className="text-sm mt-2">Booking system will be integrated soon</p>
-                    </div>
+                    {loadingBookings ? (
+                      <div className="text-center py-12">
+                        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Loading bookings...</p>
+                      </div>
+                    ) : allBookings.length > 0 ? (
+                      <div className="space-y-4">
+                        {allBookings.map((booking) => (
+                          <Card key={booking.id} className={`border-l-4 ${
+                            booking.status === 'approved' ? 'border-l-green-500' : 
+                            booking.status === 'pending' ? 'border-l-orange-500' : 
+                            'border-l-red-500'
+                          }`}>
+                            <CardContent className="p-6">
+                              <div className="flex flex-col lg:flex-row justify-between gap-4">
+                                <div className="space-y-3 flex-1">
+                                  <div className="flex items-start justify-between">
+                                    <div>
+                                      <h3 className="text-xl font-semibold mb-1">
+                                        {booking.hostelName}
+                                      </h3>
+                                      <div className="flex items-center gap-2 text-muted-foreground">
+                                        <MapPin className="w-4 h-4" />
+                                        <span className="text-sm">{booking.location}</span>
+                                      </div>
+                                    </div>
+                                    <Badge
+                                      variant={booking.status === 'approved' ? 'default' : booking.status === 'pending' ? 'secondary' : 'destructive'}
+                                    >
+                                      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                    </Badge>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm pt-2">
+                                    <div>
+                                      <p className="text-muted-foreground text-xs">User</p>
+                                      <p className="font-medium">{booking.userName}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground text-xs">Email</p>
+                                      <p className="font-medium text-xs">{booking.userEmail}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground text-xs">Price</p>
+                                      <p className="font-medium">₹{booking.price.toLocaleString()}/mo</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground text-xs">Booked On</p>
+                                      <p className="font-medium">
+                                        {booking.createdAt ? new Date(booking.createdAt.toDate()).toLocaleDateString('en-IN', { 
+                                          day: 'numeric', 
+                                          month: 'short'
+                                        }) : 'N/A'}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {booking.status === 'pending' && (
+                                  <div className="flex lg:flex-col gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={async () => {
+                                        const result = await approveBooking(booking.id);
+                                        if (result.success) {
+                                          toast({ title: 'Success', description: 'Booking approved' });
+                                          loadBookings();
+                                        } else {
+                                          toast({ title: 'Error', description: 'Failed to approve', variant: 'destructive' });
+                                        }
+                                      }}
+                                    >
+                                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      onClick={async () => {
+                                        const result = await rejectBooking(booking.id);
+                                        if (result.success) {
+                                          toast({ title: 'Success', description: 'Booking rejected' });
+                                          loadBookings();
+                                        } else {
+                                          toast({ title: 'Error', description: 'Failed to reject', variant: 'destructive' });
+                                        }
+                                      }}
+                                    >
+                                      <XCircle className="w-4 h-4 mr-1" />
+                                      Reject
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">No bookings yet</p>
+                        <p className="text-sm mt-2">Bookings will appear here once students start booking hostels</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

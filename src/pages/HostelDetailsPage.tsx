@@ -242,6 +242,37 @@ export default function HostelDetailsPage() {
                   </CardContent>
                 </Card>
 
+                {/* Google Maps Location */}
+                {hostel.googleMapLink && (
+                  <Card>
+                    <CardContent className="p-6">
+                      <h2 className="text-2xl font-bold mb-4">Location</h2>
+                      <div className="space-y-4">
+                        <iframe
+                          src={hostel.googleMapLink.includes('embed') 
+                            ? hostel.googleMapLink 
+                            : `https://maps.google.com/maps?q=${encodeURIComponent(hostel.address)}&output=embed`}
+                          width="100%"
+                          height="300"
+                          style={{ border: 0, borderRadius: '0.5rem' }}
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                        />
+                        <a 
+                          href={hostel.googleMapLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 text-primary hover:underline"
+                        >
+                          <MapPin className="w-4 h-4" />
+                          Open in Google Maps
+                        </a>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Owner Contact */}
                 {(hostel as any).ownerName && (
                   <Card>

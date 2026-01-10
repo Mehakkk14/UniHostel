@@ -50,7 +50,6 @@ export default function ListingsPage() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState(searchParams.get('location') || 'all');
-  const [priceRange, setPriceRange] = useState<[number, number]>([3000, 12000]);
   const [selectedType, setSelectedType] = useState(searchParams.get('type') || 'all');
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const [minRating, setMinRating] = useState(0);
@@ -67,11 +66,6 @@ export default function ListingsPage() {
 
       // Location
       if (selectedLocation && selectedLocation !== 'all' && !hostel.location.includes(selectedLocation)) {
-        return false;
-      }
-
-      // Price range
-      if (hostel.price < priceRange[0] || hostel.price > priceRange[1]) {
         return false;
       }
 
@@ -98,12 +92,11 @@ export default function ListingsPage() {
 
       return true;
     });
-  }, [searchQuery, selectedLocation, priceRange, selectedType, selectedFacilities, minRating, showAvailableOnly]);
+  }, [searchQuery, selectedLocation, selectedType, selectedFacilities, minRating, showAvailableOnly, hostels]);
 
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedLocation('all');
-    setPriceRange([3000, 12000]);
     setSelectedType('all');
     setSelectedFacilities([]);
     setMinRating(0);
@@ -134,26 +127,6 @@ export default function ListingsPage() {
             ))}
           </SelectContent>
         </Select>
-      </div>
-
-      {/* Price Range */}
-      <div className="space-y-3">
-        <Label className="text-sm font-semibold">Price Range (₹/month)</Label>
-        <div className="pt-4 pb-2">
-          <Slider
-            value={priceRange}
-            onValueChange={(value) => setPriceRange(value as [number, number])}
-            min={2000}
-            max={15000}
-            step={100}
-            minStepsBetweenThumbs={1}
-            className="cursor-pointer"
-          />
-        </div>
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>₹{priceRange[0].toLocaleString()}</span>
-          <span>₹{priceRange[1].toLocaleString()}</span>
-        </div>
       </div>
 
       {/* Hostel Type */}

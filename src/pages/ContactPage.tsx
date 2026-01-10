@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { addHostel } from '@/lib/firestore';
+import { locations } from '@/data/hostels';
 // import { addLocalHostel } from '@/lib/localStorage';
 import { 
   Building2, 
@@ -281,13 +282,22 @@ Please login to admin panel to review: https://unihostel.in/admin
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="location">Nearby University *</Label>
-                      <Input
-                        id="location"
-                        placeholder="IIT Delhi, DU North Campus, etc."
+                      <Select
                         value={formData.location}
-                        onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
                         required
-                      />
+                      >
+                        <SelectTrigger id="location">
+                          <SelectValue placeholder="Select university" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {locations.map((location) => (
+                            <SelectItem key={location} value={location}>
+                              {location}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div className="space-y-2">

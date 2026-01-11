@@ -272,37 +272,6 @@ export default function HostelDetailsPage() {
                     </CardContent>
                   </Card>
                 )}
-
-                {/* Owner Contact */}
-                {(hostel as any).ownerName && (
-                  <Card>
-                    <CardContent className="p-6">
-                      <h2 className="text-2xl font-bold mb-4">Contact Owner</h2>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <User className="w-5 h-5 text-muted-foreground" />
-                          <span>{(hostel as any).ownerName}</span>
-                        </div>
-                        {(hostel as any).ownerEmail && (
-                          <div className="flex items-center gap-3">
-                            <Mail className="w-5 h-5 text-muted-foreground" />
-                            <a href={`mailto:${(hostel as any).ownerEmail}`} className="text-primary hover:underline">
-                              {(hostel as any).ownerEmail}
-                            </a>
-                          </div>
-                        )}
-                        {(hostel as any).ownerPhone && (
-                          <div className="flex items-center gap-3">
-                            <Phone className="w-5 h-5 text-muted-foreground" />
-                            <a href={`tel:${(hostel as any).ownerPhone}`} className="text-primary hover:underline">
-                              {(hostel as any).ownerPhone}
-                            </a>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </div>
 
               {/* Sidebar - Booking Card */}

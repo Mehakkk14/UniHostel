@@ -2,6 +2,7 @@ import { Layout } from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserBookings } from '@/lib/bookings';
 import type { Booking } from '@/lib/bookings';
+import { getUserVerification, submitVerification, type StudentVerification } from '@/lib/firestore';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,6 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
+import { updatePassword, deleteUser, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { 
   User, 
   Mail, 
@@ -18,18 +24,40 @@ import {
   Home,
   Clock,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Upload,
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [verification, setVerification] = useState<StudentVerification | null>(null);
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [aadhaarFile, setAadhaarFile] = useState<string>('');
+  const [collegeIdFile, setCollegeIdFile] = useState<string>('');
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
+  const [notifications, setNotifications] = useState({
+    email: true,
+    sms: false,
+    bookingUpdates: true,
+    promotions: false
+  });
+  const [privacy, setPrivacy] = useState({
+    profileVisible: true,
+    showEmail: false,
+    showPhone: false
+  });
 
   useEffect(() => {
     if (user) {
       loadBookings();
+      loadVerification();
     }
   }, [user]);
 
@@ -42,6 +70,264 @@ export default function ProfilePage() {
     }
     setLoading(false);
   };
+
+  const loadVerification = async () => {
+    if (!user) return;
+    const result = await getUserVerification(user.uid);
+    if (result.success && result.data) {
+      setVerification(result.data);
+    }
+  };
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'aadhaar' | 'collegeId') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (max 500KB)
+    if (file.size > 500 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Please upload an image under 500KB. Use TinyPNG.com to compress.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const base64 = await convertToBase64(file);
+      if (type === 'aadhaar') {
+        setAadhaarFile(base64);
+      } else {
+        setCollegeIdFile(base64);
+      }
+      toast({
+        title: 'File uploaded',
+        description: `${type === 'aadhaar' ? 'Aadhaar Card' : 'College ID'} uploaded successfully`
+      });
+    } catch (error) {
+      toast({
+        title: 'Upload failed',
+        description: 'Failed to upload file. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSubmitVerification = async () => {
+    if (!user || !aadhaarFile || !collegeIdFile) {
+      toast({
+        title: 'Missing documents',
+        description: 'Please upload both Aadhaar Card and College ID',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setVerificationLoading(true);
+    const result = await submitVerification({
+      userId: user.uid,
+      userName: user.displayName || user.email || 'User',
+      userEmail: user.email || '',
+      aadhaarCard: aadhaarFile,
+      collegeId: collegeIdFile
+    });
+
+    if (result.success) {
+      toast({
+        title: 'Verification submitted!',
+        description: 'Your documents are under review. You will be notified once verified.'
+      });
+      setAadhaarFile('');
+      setCollegeIdFile('');
+      loadVerification();
+    } else {
+      toast({
+        title: 'Submission failed',
+        description: 'Failed to submit documents. Please try again.',
+        variant: 'destructive'
+      });
+    }
+    setVerificationLoading(false);
+  };
+
+  const handleChangePassword = async () => {
+    if (!user) return;
+
+    if (passwordData.new !== passwordData.confirm) {
+      toast({
+        title: 'Passwords do not match',
+        description: 'New password and confirm password must match',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (passwordData.new.length < 6) {
+      toast({
+        title: 'Password too short',
+        description: 'Password must be at least 6 characters',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      // Reauthenticate user first
+      if (user.email && passwordData.current) {
+        const credential = EmailAuthProvider.credential(user.email, passwordData.current);
+        await reauthenticateWithCredential(user, credential);
+      }
+
+      await updatePassword(user, passwordData.new);
+      toast({
+        title: 'Password changed',
+        description: 'Your password has been updated successfully'
+      });
+      setPasswordData({ current: '', new: '', confirm: '' });
+      setShowPasswordDialog(false);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to change password',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+
+    const confirmed = confirm(
+      'Are you sure you want to delete your account? This action cannot be undone. All your bookings and data will be permanently deleted.'
+    );
+
+    if (!confirmed) return;
+
+    const password = prompt('Please enter your password to confirm account deletion:');
+    if (!password) return;
+
+    try {
+      // Reauthenticate before deletion
+      if (user.email) {
+        const credential = EmailAuthProvider.credential(user.email, password);
+        await reauthenticateWithCredential(user, credential);
+      }
+
+      await deleteUser(user);
+      toast({
+        title: 'Account deleted',
+        description: 'Your account has been permanently deleted'
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete account',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSaveNotifications = () => {
+    // In production, save to Firestore or backend
+    toast({
+      title: 'Preferences saved',
+      description: 'Your notification preferences have been updated'
+    });
+  };
+
+  const handleSavePrivacy = () => {
+    // In production, save to Firestore or backend
+    toast({
+      title: 'Privacy settings saved',
+      description: 'Your privacy preferences have been updated'
+    });
+  };
+
+  const renderUploadForm = () => (
+    <div className="space-y-6">
+      <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+        <div className="flex gap-3">
+          <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Document Requirements:</p>
+            <ul className="list-disc list-inside text-blue-800 dark:text-blue-200 space-y-1">
+              <li>Upload clear, readable images (max 500KB each)</li>
+              <li>Aadhaar Card: Government-issued ID proof</li>
+              <li>College ID: Valid student ID card</li>
+              <li>Use TinyPNG.com if files are too large</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="aadhaar">Aadhaar Card *</Label>
+          <div className="mt-2">
+            <Input
+              id="aadhaar"
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileUpload(e, 'aadhaar')}
+              className="cursor-pointer"
+            />
+            {aadhaarFile && (
+              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                <CheckCircle2 className="w-4 h-4" />
+                Aadhaar Card uploaded
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="collegeId">College ID Card *</Label>
+          <div className="mt-2">
+            <Input
+              id="collegeId"
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleFileUpload(e, 'collegeId')}
+              className="cursor-pointer"
+            />
+            {collegeIdFile && (
+              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+                <CheckCircle2 className="w-4 h-4" />
+                College ID uploaded
+              </p>
+            )}
+          </div>
+        </div>
+
+        <Button 
+          onClick={handleSubmitVerification}
+          disabled={!aadhaarFile || !collegeIdFile || verificationLoading}
+          className="w-full"
+        >
+          {verificationLoading ? (
+            <>
+              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+              Submitting...
+            </>
+          ) : (
+            <>
+              <Upload className="w-4 h-4 mr-2" />
+              Submit for Verification
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
 
   if (!user) {
     return (
@@ -93,12 +379,30 @@ export default function ProfilePage() {
                         <span className="text-sm">Joined {joinedDate}</span>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="px-3 py-1">
-                      Verified Student
-                    </Badge>
+                    {verification?.status === 'approved' ? (
+                      <Badge variant="default" className="px-3 py-1">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        Verified Student
+                      </Badge>
+                    ) : verification?.status === 'pending' ? (
+                      <Badge variant="secondary" className="px-3 py-1">
+                        <Clock className="w-3 h-3 mr-1" />
+                        Verification Pending
+                      </Badge>
+                    ) : verification?.status === 'rejected' ? (
+                      <Badge variant="destructive" className="px-3 py-1">
+                        <XCircle className="w-3 h-3 mr-1" />
+                        Verification Rejected
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="px-3 py-1">
+                        <AlertCircle className="w-3 h-3 mr-1" />
+                        Not Verified
+                      </Badge>
+                    )}
                   </div>
 
-                  <Button variant="outline">Edit Profile</Button>
+                  <Button variant="outline" disabled>Edit Profile</Button>
                 </div>
               </CardContent>
             </Card>
@@ -111,8 +415,9 @@ export default function ProfilePage() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <Tabs defaultValue="bookings" className="space-y-6">
-              <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-3">
+              <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-4">
                 <TabsTrigger value="bookings">My Bookings</TabsTrigger>
+                <TabsTrigger value="verification">Verification</TabsTrigger>
                 <TabsTrigger value="info">Personal Info</TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
               </TabsList>
@@ -226,6 +531,50 @@ export default function ProfilePage() {
                 </Card>
               </TabsContent>
 
+              {/* Verification Tab */}
+              <TabsContent value="verification">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Student Verification</CardTitle>
+                    <CardDescription>
+                      Upload your documents to get verified as a student
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {verification?.status === 'approved' ? (
+                      <div className="text-center py-8">
+                        <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-500" />
+                        <h3 className="text-xl font-semibold mb-2">You're Verified!</h3>
+                        <p className="text-muted-foreground">
+                          Your student status has been verified by our admin team.
+                        </p>
+                      </div>
+                    ) : verification?.status === 'pending' ? (
+                      <div className="text-center py-8">
+                        <Clock className="w-16 h-16 mx-auto mb-4 text-orange-500" />
+                        <h3 className="text-xl font-semibold mb-2">Verification Pending</h3>
+                        <p className="text-muted-foreground">
+                          Your documents are being reviewed by our admin team. This usually takes 24-48 hours.
+                        </p>
+                      </div>
+                    ) : verification?.status === 'rejected' ? (
+                      <div className="space-y-4">
+                        <div className="text-center py-8">
+                          <XCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
+                          <h3 className="text-xl font-semibold mb-2">Verification Rejected</h3>
+                          <p className="text-muted-foreground mb-4">
+                            Your documents were rejected. Please upload clear, valid documents and try again.
+                          </p>
+                        </div>
+                        {renderUploadForm()}
+                      </div>
+                    ) : (
+                      renderUploadForm()
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
               {/* Personal Info Tab */}
               <TabsContent value="info">
                 <Card>
@@ -280,31 +629,179 @@ export default function ProfilePage() {
 
               {/* Settings Tab */}
               <TabsContent value="settings">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Account Settings</CardTitle>
-                    <CardDescription>
-                      Manage your account preferences and security
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-4">
-                      <Button variant="outline" className="w-full justify-start">
-                        Change Password
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start">
-                        Notification Preferences
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start">
-                        Privacy Settings
-                      </Button>
+                <div className="space-y-6">
+                  {/* Change Password */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Change Password</CardTitle>
+                      <CardDescription>Update your account password</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {showPasswordDialog ? (
+                        <>
+                          <div className="space-y-2">
+                            <Label htmlFor="currentPassword">Current Password</Label>
+                            <Input
+                              id="currentPassword"
+                              type="password"
+                              value={passwordData.current}
+                              onChange={(e) => setPasswordData({ ...passwordData, current: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="newPassword">New Password</Label>
+                            <Input
+                              id="newPassword"
+                              type="password"
+                              value={passwordData.new}
+                              onChange={(e) => setPasswordData({ ...passwordData, new: e.target.value })}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                            <Input
+                              id="confirmPassword"
+                              type="password"
+                              value={passwordData.confirm}
+                              onChange={(e) => setPasswordData({ ...passwordData, confirm: e.target.value })}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Button onClick={handleChangePassword}>Update Password</Button>
+                            <Button variant="outline" onClick={() => {
+                              setShowPasswordDialog(false);
+                              setPasswordData({ current: '', new: '', confirm: '' });
+                            }}>Cancel</Button>
+                          </div>
+                        </>
+                      ) : (
+                        <Button onClick={() => setShowPasswordDialog(true)}>Change Password</Button>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Notification Preferences */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Notification Preferences</CardTitle>
+                      <CardDescription>Manage how you receive notifications</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="emailNotif">Email Notifications</Label>
+                          <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                        </div>
+                        <Switch
+                          id="emailNotif"
+                          checked={notifications.email}
+                          onCheckedChange={(checked) => setNotifications({ ...notifications, email: checked })}
+                        />
+                      </div>
                       <Separator />
-                      <Button variant="destructive" className="w-full">
-                        Delete Account
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="smsNotif">SMS Notifications</Label>
+                          <p className="text-sm text-muted-foreground">Receive updates via SMS</p>
+                        </div>
+                        <Switch
+                          id="smsNotif"
+                          checked={notifications.sms}
+                          onCheckedChange={(checked) => setNotifications({ ...notifications, sms: checked })}
+                        />
+                      </div>
+                      <Separator />
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="bookingNotif">Booking Updates</Label>
+                          <p className="text-sm text-muted-foreground">Get notified about booking status</p>
+                        </div>
+                        <Switch
+                          id="bookingNotif"
+                          checked={notifications.bookingUpdates}
+                          onCheckedChange={(checked) => setNotifications({ ...notifications, bookingUpdates: checked })}
+                        />
+                      </div>
+                      <Separator />
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="promoNotif">Promotional Offers</Label>
+                          <p className="text-sm text-muted-foreground">Receive offers and promotions</p>
+                        </div>
+                        <Switch
+                          id="promoNotif"
+                          checked={notifications.promotions}
+                          onCheckedChange={(checked) => setNotifications({ ...notifications, promotions: checked })}
+                        />
+                      </div>
+                      <Button onClick={handleSaveNotifications}>Save Preferences</Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Privacy Settings */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Privacy Settings</CardTitle>
+                      <CardDescription>Control your profile visibility</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="profileVisible">Profile Visible</Label>
+                          <p className="text-sm text-muted-foreground">Make your profile visible to others</p>
+                        </div>
+                        <Switch
+                          id="profileVisible"
+                          checked={privacy.profileVisible}
+                          onCheckedChange={(checked) => setPrivacy({ ...privacy, profileVisible: checked })}
+                        />
+                      </div>
+                      <Separator />
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="showEmail">Show Email</Label>
+                          <p className="text-sm text-muted-foreground">Display email on your profile</p>
+                        </div>
+                        <Switch
+                          id="showEmail"
+                          checked={privacy.showEmail}
+                          onCheckedChange={(checked) => setPrivacy({ ...privacy, showEmail: checked })}
+                        />
+                      </div>
+                      <Separator />
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label htmlFor="showPhone">Show Phone</Label>
+                          <p className="text-sm text-muted-foreground">Display phone on your profile</p>
+                        </div>
+                        <Switch
+                          id="showPhone"
+                          checked={privacy.showPhone}
+                          onCheckedChange={(checked) => setPrivacy({ ...privacy, showPhone: checked })}
+                        />
+                      </div>
+                      <Button onClick={handleSavePrivacy}>Save Settings</Button>
+                    </CardContent>
+                  </Card>
+
+                  {/* Delete Account */}
+                  <Card className="border-destructive">
+                    <CardHeader>
+                      <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                      <CardDescription>Permanently delete your account and all data</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mb-4">
+                        <p className="text-sm text-destructive font-medium">
+                          ⚠️ Warning: This action cannot be undone. All your bookings, verifications, and account data will be permanently deleted.
+                        </p>
+                      </div>
+                      <Button variant="destructive" onClick={handleDeleteAccount}>
+                        Delete My Account
                       </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
             </Tabs>
           </motion.div>

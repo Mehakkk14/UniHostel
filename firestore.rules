@@ -54,6 +54,20 @@ service cloud.firestore {
                                request.auth.token.email == 'hello.unihostel@gmail.com';
     }
     
+    // Student Verifications collection
+    match /studentVerifications/{verificationId} {
+      // Admin can read all verifications, users can read their own
+      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) ||
+                     (request.auth != null && request.auth.token.email == 'hello.unihostel@gmail.com');
+      
+      // Authenticated users can create verifications for themselves
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Only admin can update/delete verifications
+      allow update, delete: if request.auth != null && 
+                               request.auth.token.email == 'hello.unihostel@gmail.com';
+    }
+    
     // Users collection (if you add user profiles later)
     match /users/{userId} {
       allow read: if request.auth != null;

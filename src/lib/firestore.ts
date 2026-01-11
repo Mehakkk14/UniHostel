@@ -328,3 +328,156 @@ export const deleteContactMessage = async (id: string) => {
     return { success: false, error };
   }
 };
+
+// Student Verification Collection
+const VERIFICATIONS_COLLECTION = 'studentVerifications';
+
+export interface StudentVerification {
+  id?: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  aadhaarCard: string; // base64 image
+  collegeId: string; // base64 image
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt?: any;
+  reviewedAt?: any;
+  reviewedBy?: string;
+}
+
+// Submit verification documents
+export const submitVerification = async (verificationData: Omit<StudentVerification, 'id' | 'createdAt' | 'status'>) => {
+  try {
+    const docRef = await addDoc(collection(db, VERIFICATIONS_COLLECTION), {
+      ...verificationData,
+      status: 'pending',
+      createdAt: Timestamp.now()
+    });
+    return { success: true, id: docRef.id };
+  } catch (error) {
+    console.error('Error submitting verification:', error);
+    return { success: false, error };
+  }
+};
+
+// Get user's verification status
+export const getUserVerification = async (userId: string) => {
+  try {
+    const q = query(
+      collection(db, VERIFICATIONS_COLLECTION),
+      where('userId', '==', userId)
+    );
+    const querySnapshot = await getDocs(q);
+    
+    if (querySnapshot.empty) {
+      return { success: true, data: null };
+    }
+    
+    // Get the most recent one
+    const docs = querySnapshot.docs.sort((a: any, b: any) => {
+      const aTime = a.data().createdAt?.toMillis() || 0;
+      const bTime = b.data().createdAt?.toMillis() || 0;
+      return bTime - aTime;
+    });
+    
+    const doc = docs[0];
+    return { 
+      success: true, 
+      data: { id: doc.id, ...doc.data() } as StudentVerification 
+    };
+  } catch (error) {
+    console.error('Error getting verification:', error);
+    return { success: false, error };
+  }
+};
+
+// Get all pending verifications (Admin)
+export const getPendingVerifications = async () => {
+  try {
+    const q = query(
+      collection(db, VERIFICATIONS_COLLECTION),
+      where('status', '==', 'pending')
+    );
+    const querySnapshot = await getDocs(q);
+    const verifications: StudentVerification[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      verifications.push({
+        id: doc.id,
+        ...doc.data()
+      } as StudentVerification);
+    });
+    
+    // Sort by createdAt on client side
+    verifications.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toMillis() || 0;
+      const bTime = b.createdAt?.toMillis() || 0;
+      return bTime - aTime;
+    });
+    
+    return { success: true, data: verifications };
+  } catch (error) {
+    console.error('Error getting pending verifications:', error);
+    return { success: false, error };
+  }
+};
+
+// Get all verifications (Admin)
+export const getAllVerifications = async () => {
+  try {
+    const q = query(
+      collection(db, VERIFICATIONS_COLLECTION)
+    );
+    const querySnapshot = await getDocs(q);
+    const verifications: StudentVerification[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      verifications.push({
+        id: doc.id,
+        ...doc.data()
+      } as StudentVerification);
+    });
+    
+    // Sort by createdAt on client side
+    verifications.sort((a: any, b: any) => {
+      const aTime = a.createdAt?.toMillis() || 0;
+      const bTime = b.createdAt?.toMillis() || 0;
+      return bTime - aTime;
+    });
+    
+    return { success: true, data: verifications };
+  } catch (error) {
+    console.error('Error getting verifications:', error);
+    return { success: false, error };
+  }
+};
+
+// Approve verification (Admin)
+export const approveVerification = async (id: string, adminEmail: string) => {
+  try {
+    await updateDoc(doc(db, VERIFICATIONS_COLLECTION, id), {
+      status: 'approved',
+      reviewedAt: Timestamp.now(),
+      reviewedBy: adminEmail
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error approving verification:', error);
+    return { success: false, error };
+  }
+};
+
+// Reject verification (Admin)
+export const rejectVerification = async (id: string, adminEmail: string) => {
+  try {
+    await updateDoc(doc(db, VERIFICATIONS_COLLECTION, id), {
+      status: 'rejected',
+      reviewedAt: Timestamp.now(),
+      reviewedBy: adminEmail
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error rejecting verification:', error);
+    return { success: false, error };
+  }
+};

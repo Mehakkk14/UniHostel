@@ -210,12 +210,12 @@ Please login to admin panel to review: https://unihostel.in/admin
         return;
       }
       
-      // Check file sizes (max 500KB per image for base64)
-      const oversizedFiles = fileArray.filter(file => file.size > 500 * 1024);
+      // Check file sizes (max 300KB per image for base64 - 5 images ~= 2MB base64, need to stay under Firestore 1MB limit)
+      const oversizedFiles = fileArray.filter(file => file.size > 300 * 1024);
       if (oversizedFiles.length > 0) {
         toast({
           title: "Images too large",
-          description: "Please compress images to under 500KB each",
+          description: "Please compress images to under 300KB each. Use TinyPNG.com for compression.",
           variant: "destructive"
         });
         return;
@@ -456,7 +456,7 @@ Please login to admin panel to review: https://unihostel.in/admin
                       <span className="text-primary font-medium">Click to upload</span> or drag and drop
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      PNG, JPG, WebP (max 500KB each, 5 images max)
+                      PNG, JPG, WebP (max 300KB each, 5 images max). Use TinyPNG.com to compress.
                     </p>
                   </label>
 

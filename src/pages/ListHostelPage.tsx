@@ -435,7 +435,7 @@ Please login to admin panel to review: https://unihostel.in/admin
                   </h3>
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
                     <p className="text-amber-900">📸 <strong>Important:</strong> Compress images before uploading</p>
-                    <p className="text-amber-800 text-xs mt-1">Max 5 images, each under 500KB. Use <a href="https://tinypng.com" target="_blank" rel="noopener" className="text-primary hover:underline">TinyPNG</a> to compress.</p>
+                    <p className="text-amber-800 text-xs mt-1">Max 5 images, each under 300KB. Use <a href="https://tinypng.com" target="_blank" rel="noopener" className="text-primary hover:underline">TinyPNG</a> to compress.</p>
                   </div>
                   
                   {/* Upload Area */}
@@ -454,9 +454,6 @@ Please login to admin panel to review: https://unihostel.in/admin
                     <Upload className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                     <p className="text-muted-foreground">
                       <span className="text-primary font-medium">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      PNG, JPG, WebP (max 300KB each, 5 images max). Use TinyPNG.com to compress.
                     </p>
                   </label>
 

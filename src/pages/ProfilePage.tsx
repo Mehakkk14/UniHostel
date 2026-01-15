@@ -2,7 +2,6 @@ import { Layout } from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserBookings } from '@/lib/bookings';
 import type { Booking } from '@/lib/bookings';
-import { getUserVerification, submitVerification, type StudentVerification } from '@/lib/firestore';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,10 +23,7 @@ import {
   Home,
   Clock,
   CheckCircle2,
-  XCircle,
-  Upload,
-  FileText,
-  AlertCircle
+  XCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -36,10 +32,6 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [verification, setVerification] = useState<StudentVerification | null>(null);
-  const [verificationLoading, setVerificationLoading] = useState(false);
-  const [aadhaarFile, setAadhaarFile] = useState<string>('');
-  const [collegeIdFile, setCollegeIdFile] = useState<string>('');
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
   const [notifications, setNotifications] = useState({
@@ -57,7 +49,6 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       loadBookings();
-      loadVerification();
     }
   }, [user]);
 
@@ -69,94 +60,6 @@ export default function ProfilePage() {
       setBookings(result.data);
     }
     setLoading(false);
-  };
-
-  const loadVerification = async () => {
-    if (!user) return;
-    const result = await getUserVerification(user.uid);
-    if (result.success && result.data) {
-      setVerification(result.data);
-    }
-  };
-
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
-    });
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'aadhaar' | 'collegeId') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Check file size (max 500KB)
-    if (file.size > 500 * 1024) {
-      toast({
-        title: 'File too large',
-        description: 'Please upload an image under 500KB. Use TinyPNG.com to compress.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    try {
-      const base64 = await convertToBase64(file);
-      if (type === 'aadhaar') {
-        setAadhaarFile(base64);
-      } else {
-        setCollegeIdFile(base64);
-      }
-      toast({
-        title: 'File uploaded',
-        description: `${type === 'aadhaar' ? 'Aadhaar Card' : 'College ID'} uploaded successfully`
-      });
-    } catch (error) {
-      toast({
-        title: 'Upload failed',
-        description: 'Failed to upload file. Please try again.',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleSubmitVerification = async () => {
-    if (!user || !aadhaarFile || !collegeIdFile) {
-      toast({
-        title: 'Missing documents',
-        description: 'Please upload both Aadhaar Card and College ID',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setVerificationLoading(true);
-    const result = await submitVerification({
-      userId: user.uid,
-      userName: user.displayName || user.email || 'User',
-      userEmail: user.email || '',
-      aadhaarCard: aadhaarFile,
-      collegeId: collegeIdFile
-    });
-
-    if (result.success) {
-      toast({
-        title: 'Verification submitted!',
-        description: 'Your documents are under review. You will be notified once verified.'
-      });
-      setAadhaarFile('');
-      setCollegeIdFile('');
-      loadVerification();
-    } else {
-      toast({
-        title: 'Submission failed',
-        description: 'Failed to submit documents. Please try again.',
-        variant: 'destructive'
-      });
-    }
-    setVerificationLoading(false);
   };
 
   const handleChangePassword = async () => {
@@ -252,83 +155,6 @@ export default function ProfilePage() {
     });
   };
 
-  const renderUploadForm = () => (
-    <div className="space-y-6">
-      <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <div className="flex gap-3">
-          <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-          <div className="text-sm">
-            <p className="font-semibold text-blue-900 dark:text-blue-100 mb-1">Document Requirements:</p>
-            <ul className="list-disc list-inside text-blue-800 dark:text-blue-200 space-y-1">
-              <li>Upload clear, readable images (max 500KB each)</li>
-              <li>Aadhaar Card: Government-issued ID proof</li>
-              <li>College ID: Valid student ID card</li>
-              <li>Use TinyPNG.com if files are too large</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="aadhaar">Aadhaar Card *</Label>
-          <div className="mt-2">
-            <Input
-              id="aadhaar"
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileUpload(e, 'aadhaar')}
-              className="cursor-pointer"
-            />
-            {aadhaarFile && (
-              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4" />
-                Aadhaar Card uploaded
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="collegeId">College ID Card *</Label>
-          <div className="mt-2">
-            <Input
-              id="collegeId"
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileUpload(e, 'collegeId')}
-              className="cursor-pointer"
-            />
-            {collegeIdFile && (
-              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4" />
-                College ID uploaded
-              </p>
-            )}
-          </div>
-        </div>
-
-        <Button 
-          onClick={handleSubmitVerification}
-          disabled={!aadhaarFile || !collegeIdFile || verificationLoading}
-          className="w-full"
-        >
-          {verificationLoading ? (
-            <>
-              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-              Submitting...
-            </>
-          ) : (
-            <>
-              <Upload className="w-4 h-4 mr-2" />
-              Submit for Verification
-            </>
-          )}
-        </Button>
-      </div>
-    </div>
-  );
-
   if (!user) {
     return (
       <Layout>
@@ -379,27 +205,6 @@ export default function ProfilePage() {
                         <span className="text-sm">Joined {joinedDate}</span>
                       </div>
                     </div>
-                    {verification?.status === 'approved' ? (
-                      <Badge variant="default" className="px-3 py-1">
-                        <CheckCircle2 className="w-3 h-3 mr-1" />
-                        Verified Student
-                      </Badge>
-                    ) : verification?.status === 'pending' ? (
-                      <Badge variant="secondary" className="px-3 py-1">
-                        <Clock className="w-3 h-3 mr-1" />
-                        Verification Pending
-                      </Badge>
-                    ) : verification?.status === 'rejected' ? (
-                      <Badge variant="destructive" className="px-3 py-1">
-                        <XCircle className="w-3 h-3 mr-1" />
-                        Verification Rejected
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="px-3 py-1">
-                        <AlertCircle className="w-3 h-3 mr-1" />
-                        Not Verified
-                      </Badge>
-                    )}
                   </div>
 
                   <Button variant="outline" disabled>Edit Profile</Button>
@@ -415,9 +220,8 @@ export default function ProfilePage() {
             transition={{ duration: 0.5, delay: 0.2 }}
           >
             <Tabs defaultValue="bookings" className="space-y-6">
-              <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-4">
+              <TabsList className="grid w-full md:w-auto grid-cols-3">
                 <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-                <TabsTrigger value="verification">Verification</TabsTrigger>
                 <TabsTrigger value="info">Personal Info</TabsTrigger>
                 <TabsTrigger value="settings">Settings</TabsTrigger>
               </TabsList>
@@ -526,50 +330,6 @@ export default function ProfilePage() {
                           <a href="/find-hostels">Browse Hostels</a>
                         </Button>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Verification Tab */}
-              <TabsContent value="verification">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Student Verification</CardTitle>
-                    <CardDescription>
-                      Upload your documents to get verified as a student
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {verification?.status === 'approved' ? (
-                      <div className="text-center py-8">
-                        <CheckCircle2 className="w-16 h-16 mx-auto mb-4 text-green-500" />
-                        <h3 className="text-xl font-semibold mb-2">You're Verified!</h3>
-                        <p className="text-muted-foreground">
-                          Your student status has been verified by our admin team.
-                        </p>
-                      </div>
-                    ) : verification?.status === 'pending' ? (
-                      <div className="text-center py-8">
-                        <Clock className="w-16 h-16 mx-auto mb-4 text-orange-500" />
-                        <h3 className="text-xl font-semibold mb-2">Verification Pending</h3>
-                        <p className="text-muted-foreground">
-                          Your documents are being reviewed by our admin team. This usually takes 24-48 hours.
-                        </p>
-                      </div>
-                    ) : verification?.status === 'rejected' ? (
-                      <div className="space-y-4">
-                        <div className="text-center py-8">
-                          <XCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
-                          <h3 className="text-xl font-semibold mb-2">Verification Rejected</h3>
-                          <p className="text-muted-foreground mb-4">
-                            Your documents were rejected. Please upload clear, valid documents and try again.
-                          </p>
-                        </div>
-                        {renderUploadForm()}
-                      </div>
-                    ) : (
-                      renderUploadForm()
                     )}
                   </CardContent>
                 </Card>

@@ -5,6 +5,9 @@ import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { getHostelById } from '@/lib/firestore';
 import { createBooking } from '@/lib/bookings';
@@ -27,7 +30,10 @@ import {
   User,
   Home,
   ArrowLeft,
-  Calendar
+  Calendar,
+  Upload,
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react';
 
 const facilityIcons: Record<string, any> = {
@@ -49,6 +55,15 @@ export default function HostelDetailsPage() {
   const [hostel, setHostel] = useState<Hostel | null>(null);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
+  const [showBookingDialog, setShowBookingDialog] = useState(false);
+  const [bookingFormData, setBookingFormData] = useState({
+    photo: '',
+    name: '',
+    phone: '',
+    aadhaar: '',
+    collegeId: ''
+  });
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadHostel();
@@ -81,7 +96,76 @@ export default function HostelDetailsPage() {
       return;
     }
 
-    if (!hostel) return;
+    // Open booking form dialog
+    setShowBookingDialog(true);
+    setBookingFormData({
+      photo: '',
+      name: user.displayName || '',
+      phone: '',
+      aadhaar: '',
+      collegeId: ''
+    });
+  };
+
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'photo' | 'aadhaar' | 'collegeId') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024) {
+      toast({
+        title: 'File too large',
+        description: 'Please upload an image under 500KB',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const base64 = await convertToBase64(file);
+      setBookingFormData(prev => ({ ...prev, [field]: base64 }));
+      toast({
+        title: 'File uploaded',
+        description: `${field} uploaded successfully`
+      });
+    } catch (error) {
+      toast({
+        title: 'Upload failed',
+        description: 'Failed to upload file',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleSubmitBooking = async () => {
+    if (!bookingFormData.photo || !bookingFormData.name || !bookingFormData.phone || !bookingFormData.aadhaar || !bookingFormData.collegeId) {
+      toast({
+        title: 'Missing information',
+        description: 'Please fill all fields and upload all documents',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Validate phone number (10 digits)
+    if (!/^\d{10}$/.test(bookingFormData.phone)) {
+      toast({
+        title: 'Invalid phone number',
+        description: 'Please enter a valid 10-digit phone number',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!hostel || !user) return;
 
     setBooking(true);
     const bookingData = {
@@ -89,7 +173,11 @@ export default function HostelDetailsPage() {
       hostelName: hostel.name,
       userId: user.uid,
       userEmail: user.email || '',
-      userName: user.displayName || user.email || '',
+      userName: bookingFormData.name,
+      userPhone: bookingFormData.phone,
+      userPhoto: bookingFormData.photo,
+      userAadhaar: bookingFormData.aadhaar,
+      userCollegeId: bookingFormData.collegeId,
       location: hostel.location,
       address: hostel.address,
       price: hostel.price,
@@ -101,6 +189,7 @@ export default function HostelDetailsPage() {
     setBooking(false);
 
     if (result.success) {
+      setShowBookingDialog(false);
       toast({
         title: 'Booking Submitted! 🎉',
         description: 'Your booking request has been sent for approval. Check your profile for status updates.',
@@ -203,7 +292,11 @@ export default function HostelDetailsPage() {
                     {hostel.images && hostel.images.length > 0 ? (
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         {hostel.images.map((img, idx) => (
-                          <div key={idx} className="aspect-video rounded-lg overflow-hidden bg-muted">
+                          <div 
+                            key={idx} 
+                            className="aspect-video rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => setSelectedImage(img)}
+                          >
                             <img src={img} alt={`${hostel.name} ${idx + 1}`} className="w-full h-full object-cover" />
                           </div>
                         ))}
@@ -313,6 +406,141 @@ export default function HostelDetailsPage() {
           </div>
         </section>
       </div>
+
+      {/* Booking Form Dialog */}
+      <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Complete Your Booking</DialogTitle>
+            <DialogDescription>
+              Please provide your details and documents to proceed with the booking
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Name */}
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name *</Label>
+              <Input
+                id="name"
+                value={bookingFormData.name}
+                onChange={(e) => setBookingFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Enter your full name"
+              />
+            </div>
+
+            {/* Phone Number */}
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={bookingFormData.phone}
+                onChange={(e) => setBookingFormData(prev => ({ ...prev, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                placeholder="Enter 10-digit phone number"
+                maxLength={10}
+              />
+              <p className="text-xs text-muted-foreground">Enter your mobile number (10 digits)</p>
+            </div>
+
+            {/* Photo Upload */}
+            <div className="space-y-2">
+              <Label>Your Photo *</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e, 'photo')}
+                  className="flex-1"
+                />
+                {bookingFormData.photo && (
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Upload a clear photo (max 500KB)</p>
+            </div>
+
+            {/* Aadhaar Card */}
+            <div className="space-y-2">
+              <Label>Aadhaar Card *</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e, 'aadhaar')}
+                  className="flex-1"
+                />
+                {bookingFormData.aadhaar && (
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Upload your Aadhaar card (max 500KB)</p>
+            </div>
+
+            {/* College ID */}
+            <div className="space-y-2">
+              <Label>College ID Card *</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e, 'collegeId')}
+                  className="flex-1"
+                />
+                {bookingFormData.collegeId && (
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">Upload your college ID (max 500KB)</p>
+            </div>
+
+            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5" />
+              <p className="text-xs text-blue-700">
+                All documents are required for verification. Your booking will be processed after admin approval.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowBookingDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={handleSubmitBooking}
+              disabled={booking || !bookingFormData.photo || !bookingFormData.name || !bookingFormData.phone || !bookingFormData.aadhaar || !bookingFormData.collegeId}
+            >
+              {booking ? 'Submitting...' : 'Submit Booking'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Lightbox Dialog */}
+      <Dialog open={!!selectedImage} onOpenChange={(open) => !open && setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl w-full p-0">
+          <div className="relative">
+            <img 
+              src={selectedImage || ''} 
+              alt="Full size" 
+              className="w-full h-auto max-h-[90vh] object-contain"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
+              onClick={() => setSelectedImage(null)}
+            >
+              ✕
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

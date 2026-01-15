@@ -481,3 +481,71 @@ export const rejectVerification = async (id: string, adminEmail: string) => {
     return { success: false, error };
   }
 };
+
+// User Analytics
+const USERS_COLLECTION = 'users';
+
+export interface UserData {
+  id: string;
+  uid: string;
+  email: string;
+  displayName: string | null;
+  photoURL: string | null;
+  createdAt: any;
+  lastLoginAt: any;
+  provider: string;
+}
+
+// Get all users for analytics
+export const getAllUsers = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, USERS_COLLECTION));
+    const users: UserData[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      users.push({
+        id: doc.id,
+        ...doc.data()
+      } as UserData);
+    });
+    
+    // Sort by creation date (newest first) on client side
+    users.sort((a, b) => {
+      const dateA = a.createdAt?.toDate?.() || new Date(0);
+      const dateB = b.createdAt?.toDate?.() || new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
+    
+    return { success: true, data: users };
+  } catch (error) {
+    console.error('Error getting users:', error);
+    return { success: false, error, data: [] };
+  }
+};
+
+// Add or update user in users collection (call this after signup/login)
+export const saveUserData = async (userData: Omit<UserData, 'id'>) => {
+  try {
+    const userRef = doc(db, USERS_COLLECTION, userData.uid);
+    const userDoc = await getDoc(userRef);
+    
+    if (userDoc.exists()) {
+      // Update last login time
+      await updateDoc(userRef, {
+        lastLoginAt: Timestamp.now()
+      });
+    } else {
+      // Create new user record
+      await updateDoc(userRef, {
+        ...userData,
+        createdAt: Timestamp.now(),
+        lastLoginAt: Timestamp.now()
+      });
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving user data:', error);
+    return { success: false, error };
+  }
+};

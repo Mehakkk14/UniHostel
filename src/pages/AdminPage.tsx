@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { isAdmin } from '@/lib/adminAuth';
 import { addUniversity, getUniversities, deleteUniversity, University } from '@/lib/universities';
-import { getPendingHostels, getAllHostels, approveHostel, rejectHostel, deleteHostel, getContactMessages, markMessageAsRead, deleteContactMessage, type ContactMessage, getPendingVerifications, approveVerification, rejectVerification, type StudentVerification } from '@/lib/firestore';
+import { getPendingHostels, getAllHostels, approveHostel, rejectHostel, deleteHostel, getContactMessages, markMessageAsRead, deleteContactMessage, type ContactMessage, getPendingVerifications, approveVerification, rejectVerification, type StudentVerification, getAllUsers } from '@/lib/firestore';
 import { getAllBookings, approveBooking, rejectBooking, type Booking } from '@/lib/bookings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -88,6 +88,8 @@ export default function AdminPage() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [pendingVerifications, setPendingVerifications] = useState<StudentVerification[]>([]);
   const [loadingVerifications, setLoadingVerifications] = useState(false);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Load data from Firebase
   useEffect(() => {
@@ -97,6 +99,7 @@ export default function AdminPage() {
     loadBookings();
     loadContactMessages();
     loadPendingVerifications();
+    loadUsers();
   }, []);
 
   const loadPendingHostels = async () => {
@@ -160,6 +163,17 @@ export default function AdminPage() {
       console.error('Error loading verifications:', result.error);
     }
     setLoadingVerifications(false);
+  };
+
+  const loadUsers = async () => {
+    setLoadingUsers(true);
+    const result = await getAllUsers();
+    if (result.success) {
+      setAllUsers(result.data);
+    } else {
+      console.error('Error loading users:', result.error);
+    }
+    setLoadingUsers(false);
   };
 
   const handleApproveVerification = async (id: string) => {
@@ -520,7 +534,7 @@ export default function AdminPage() {
             transition={{ delay: 0.2 }}
           >
             <Tabs defaultValue="approvals" className="space-y-6">
-              <TabsList className="grid w-full md:w-auto grid-cols-3 md:grid-cols-6">
+              <TabsList className="grid w-full md:w-auto grid-cols-3 md:grid-cols-7">
                 <TabsTrigger value="approvals">
                   Pending Approvals
                   {pendingHostels.length > 0 && (
@@ -548,6 +562,7 @@ export default function AdminPage() {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="universities">Universities</TabsTrigger>
+                <TabsTrigger value="analytics">User Analytics</TabsTrigger>
               </TabsList>
 
               {/* Pending Approvals Tab */}
@@ -800,7 +815,7 @@ export default function AdminPage() {
                                     </Badge>
                                   </div>
 
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm pt-2">
+                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm pt-2">
                                     <div>
                                       <p className="text-muted-foreground text-xs">User</p>
                                       <p className="font-medium">{booking.userName}</p>
@@ -808,6 +823,10 @@ export default function AdminPage() {
                                     <div>
                                       <p className="text-muted-foreground text-xs">Email</p>
                                       <p className="font-medium text-xs">{booking.userEmail}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground text-xs">Phone</p>
+                                      <p className="font-medium">{booking.userPhone || 'N/A'}</p>
                                     </div>
                                     <div>
                                       <p className="text-muted-foreground text-xs">Price</p>
@@ -823,6 +842,48 @@ export default function AdminPage() {
                                       </p>
                                     </div>
                                   </div>
+
+                                  {/* Student Documents */}
+                                  {(booking.userPhoto || booking.userAadhaar || booking.userCollegeId) && (
+                                    <div className="pt-4 border-t mt-4">
+                                      <p className="text-sm font-medium mb-3 text-muted-foreground">Student Documents</p>
+                                      <div className="grid grid-cols-3 gap-3">
+                                        {booking.userPhoto && (
+                                          <div>
+                                            <p className="text-xs text-muted-foreground mb-2">Photo</p>
+                                            <img 
+                                              src={booking.userPhoto} 
+                                              alt="Student"
+                                              className="w-full aspect-square object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                              onClick={() => window.open(booking.userPhoto, '_blank')}
+                                            />
+                                          </div>
+                                        )}
+                                        {booking.userAadhaar && (
+                                          <div>
+                                            <p className="text-xs text-muted-foreground mb-2">Aadhaar Card</p>
+                                            <img 
+                                              src={booking.userAadhaar} 
+                                              alt="Aadhaar"
+                                              className="w-full aspect-square object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                              onClick={() => window.open(booking.userAadhaar, '_blank')}
+                                            />
+                                          </div>
+                                        )}
+                                        {booking.userCollegeId && (
+                                          <div>
+                                            <p className="text-xs text-muted-foreground mb-2">College ID</p>
+                                            <img 
+                                              src={booking.userCollegeId} 
+                                              alt="College ID"
+                                              className="w-full aspect-square object-cover rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                              onClick={() => window.open(booking.userCollegeId, '_blank')}
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
 
                                 {booking.status === 'pending' && (
@@ -1109,6 +1170,102 @@ export default function AdminPage() {
                         <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
                         <p className="text-lg font-medium">No messages yet</p>
                         <p className="text-sm mt-2">Messages from the contact form will appear here</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* User Analytics Tab */}
+              <TabsContent value="analytics">
+                <div className="grid gap-6 md:grid-cols-3 mb-6">
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total Users</p>
+                          <p className="text-3xl font-bold">{allUsers.length}</p>
+                        </div>
+                        <Users className="w-12 h-12 text-primary opacity-20" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total Bookings</p>
+                          <p className="text-3xl font-bold">{allBookings.length}</p>
+                        </div>
+                        <Home className="w-12 h-12 text-primary opacity-20" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Total Hostels</p>
+                          <p className="text-3xl font-bold">{allHostels.length}</p>
+                        </div>
+                        <Home className="w-12 h-12 text-primary opacity-20" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Registered Users</CardTitle>
+                    <CardDescription>
+                      All users who have signed up on the platform
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingUsers ? (
+                      <div className="text-center py-12">
+                        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                        <p className="text-muted-foreground">Loading users...</p>
+                      </div>
+                    ) : allUsers.length > 0 ? (
+                      <div className="space-y-4">
+                        {allUsers.map((user) => (
+                          <Card key={user.id}>
+                            <CardContent className="pt-6">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                  {user.photoURL ? (
+                                    <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full rounded-full object-cover" />
+                                  ) : (
+                                    <span className="text-lg font-bold text-primary">
+                                      {user.displayName?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-semibold">{user.displayName || 'Anonymous'}</p>
+                                  <p className="text-sm text-muted-foreground">{user.email}</p>
+                                  <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-1">
+                                      <Calendar className="w-3 h-3" />
+                                      Joined: {user.createdAt ? new Date(user.createdAt.toDate()).toLocaleDateString('en-IN') : 'N/A'}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <TrendingUp className="w-3 h-3" />
+                                      Last Login: {user.lastLoginAt ? new Date(user.lastLoginAt.toDate()).toLocaleDateString('en-IN') : 'N/A'}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">No users yet</p>
+                        <p className="text-sm mt-2">User signups will appear here</p>
                       </div>
                     )}
                   </CardContent>

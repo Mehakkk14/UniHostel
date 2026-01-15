@@ -21,6 +21,10 @@ export interface Booking {
   userId: string;
   userEmail: string;
   userName: string;
+  userPhone?: string;
+  userPhoto?: string;
+  userAadhaar?: string;
+  userCollegeId?: string;
   location: string;
   address: string;
   price: number;

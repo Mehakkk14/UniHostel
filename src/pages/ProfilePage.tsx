@@ -2,6 +2,7 @@ import { Layout } from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserBookings } from '@/lib/bookings';
 import type { Booking } from '@/lib/bookings';
+import { saveNotificationPreferences, savePrivacyPreferences, getUserPreferences } from '@/lib/firestore';
 import { requestNotificationPermission, showNotification, checkNotificationPermission } from '@/lib/notifications';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,6 +51,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       loadBookings();
+      loadUserPreferences();
     }
   }, [user]);
 
@@ -61,6 +63,15 @@ export default function ProfilePage() {
       setBookings(result.data);
     }
     setLoading(false);
+  };
+
+  const loadUserPreferences = async () => {
+    if (!user) return;
+    const result = await getUserPreferences(user.uid);
+    if (result.success && result.data) {
+      setNotifications(result.data.notifications);
+      setPrivacy(result.data.privacy);
+    }
   };
 
   const handleChangePassword = async () => {
@@ -140,20 +151,38 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSaveNotifications = () => {
-    // In production, save to Firestore or backend
-    toast({
-      title: 'Preferences saved',
-      description: 'Your notification preferences have been updated'
-    });
+  const handleSaveNotifications = async () => {
+    if (!user) return;
+    const result = await saveNotificationPreferences(user.uid, notifications);
+    if (result.success) {
+      toast({
+        title: 'Preferences saved',
+        description: 'Your notification preferences have been updated'
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: 'Failed to save preferences',
+        variant: 'destructive'
+      });
+    }
   };
 
-  const handleSavePrivacy = () => {
-    // In production, save to Firestore or backend
-    toast({
-      title: 'Privacy settings saved',
-      description: 'Your privacy preferences have been updated'
-    });
+  const handleSavePrivacy = async () => {
+    if (!user) return;
+    const result = await savePrivacyPreferences(user.uid, privacy);
+    if (result.success) {
+      toast({
+        title: 'Privacy settings saved',
+        description: 'Your privacy preferences have been updated'
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: 'Failed to save settings',
+        variant: 'destructive'
+      });
+    }
   };
 
   if (!user) {

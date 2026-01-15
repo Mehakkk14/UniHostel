@@ -9,7 +9,8 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  getDoc
+  getDoc,
+  setDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Hostel } from '@/data/hostels';
@@ -547,5 +548,115 @@ export const saveUserData = async (userData: Omit<UserData, 'id'>) => {
   } catch (error) {
     console.error('Error saving user data:', error);
     return { success: false, error };
+  }
+};
+
+// User Preferences
+export interface UserPreferences {
+  userId: string;
+  notifications: {
+    email: boolean;
+    sms: boolean;
+    bookingUpdates: boolean;
+    promotions: boolean;
+    browserPush: boolean;
+  };
+  privacy: {
+    profileVisible: boolean;
+    showEmail: boolean;
+    showPhone: boolean;
+  };
+  updatedAt: any;
+}
+
+// Save user notification preferences
+export const saveNotificationPreferences = async (userId: string, notifications: any) => {
+  try {
+    const prefsRef = doc(db, 'userPreferences', userId);
+    await updateDoc(prefsRef, {
+      notifications,
+      updatedAt: Timestamp.now()
+    }).catch(async () => {
+      // If document doesn't exist, create it
+      await setDoc(prefsRef, {
+        userId,
+        notifications,
+        privacy: {
+          profileVisible: true,
+          showEmail: false,
+          showPhone: false
+        },
+        updatedAt: Timestamp.now()
+      });
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving notification preferences:', error);
+    return { success: false, error };
+  }
+};
+
+// Save user privacy preferences
+export const savePrivacyPreferences = async (userId: string, privacy: any) => {
+  try {
+    const prefsRef = doc(db, 'userPreferences', userId);
+    await updateDoc(prefsRef, {
+      privacy,
+      updatedAt: Timestamp.now()
+    }).catch(async () => {
+      // If document doesn't exist, create it
+      await setDoc(prefsRef, {
+        userId,
+        notifications: {
+          email: true,
+          sms: false,
+          bookingUpdates: true,
+          promotions: false,
+          browserPush: false
+        },
+        privacy,
+        updatedAt: Timestamp.now()
+      });
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving privacy preferences:', error);
+    return { success: false, error };
+  }
+};
+
+// Get user preferences
+export const getUserPreferences = async (userId: string) => {
+  try {
+    const prefsRef = doc(db, 'userPreferences', userId);
+    const prefsDoc = await getDoc(prefsRef);
+    
+    if (prefsDoc.exists()) {
+      return { success: true, data: prefsDoc.data() as UserPreferences };
+    } else {
+      // Return default preferences
+      return {
+        success: true,
+        data: {
+          userId,
+          notifications: {
+            email: true,
+            sms: false,
+            bookingUpdates: true,
+            promotions: false,
+            browserPush: false
+          },
+          privacy: {
+            profileVisible: true,
+            showEmail: false,
+            showPhone: false
+          },
+          updatedAt: Timestamp.now()
+        } as UserPreferences
+      };
+    }
+  } catch (error) {
+    console.error('Error getting user preferences:', error);
+    return { success: false, error, data: null };
   }
 };

@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { isAdmin } from '@/lib/adminAuth';
 import { addUniversity, getUniversities, deleteUniversity, University } from '@/lib/universities';
-import { getPendingHostels, getAllHostels, approveHostel, rejectHostel, deleteHostel, getContactMessages, markMessageAsRead, deleteContactMessage, type ContactMessage, getPendingVerifications, approveVerification, rejectVerification, type StudentVerification, getAllUsers } from '@/lib/firestore';
+import { getPendingHostels, getAllHostels, approveHostel, rejectHostel, deleteHostel, getContactMessages, markMessageAsRead, deleteContactMessage, type ContactMessage, getAllUsers } from '@/lib/firestore';
 import { getAllBookings, approveBooking, rejectBooking, type Booking } from '@/lib/bookings';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -86,8 +86,6 @@ export default function AdminPage() {
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [pendingVerifications, setPendingVerifications] = useState<StudentVerification[]>([]);
-  const [loadingVerifications, setLoadingVerifications] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
@@ -98,7 +96,6 @@ export default function AdminPage() {
     loadUniversities();
     loadBookings();
     loadContactMessages();
-    loadPendingVerifications();
     loadUsers();
   }, []);
 
@@ -154,17 +151,6 @@ export default function AdminPage() {
     setLoadingMessages(false);
   };
 
-  const loadPendingVerifications = async () => {
-    setLoadingVerifications(true);
-    const result = await getPendingVerifications();
-    if (result.success) {
-      setPendingVerifications(result.data);
-    } else {
-      console.error('Error loading verifications:', result.error);
-    }
-    setLoadingVerifications(false);
-  };
-
   const loadUsers = async () => {
     setLoadingUsers(true);
     const result = await getAllUsers();
@@ -174,42 +160,6 @@ export default function AdminPage() {
       console.error('Error loading users:', result.error);
     }
     setLoadingUsers(false);
-  };
-
-  const handleApproveVerification = async (id: string) => {
-    if (!user?.email) return;
-    const result = await approveVerification(id, user.email);
-    if (result.success) {
-      toast({
-        title: 'Verification Approved',
-        description: 'Student has been verified successfully',
-      });
-      loadPendingVerifications();
-    } else {
-      toast({
-        title: 'Error',
-        description: 'Failed to approve verification',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleRejectVerification = async (id: string) => {
-    if (!user?.email) return;
-    const result = await rejectVerification(id, user.email);
-    if (result.success) {
-      toast({
-        title: 'Verification Rejected',
-        description: 'Student verification has been rejected',
-      });
-      loadPendingVerifications();
-    } else {
-      toast({
-        title: 'Error',
-        description: 'Failed to reject verification',
-        variant: 'destructive',
-      });
-    }
   };
 
   const loadUniversities = async () => {
@@ -534,7 +484,7 @@ export default function AdminPage() {
             transition={{ delay: 0.2 }}
           >
             <Tabs defaultValue="approvals" className="space-y-6">
-              <TabsList className="grid w-full md:w-auto grid-cols-3 md:grid-cols-7">
+              <TabsList className="grid w-full md:w-auto grid-cols-3 md:grid-cols-6">
                 <TabsTrigger value="approvals">
                   Pending Approvals
                   {pendingHostels.length > 0 && (
@@ -545,14 +495,6 @@ export default function AdminPage() {
                 </TabsTrigger>
                 <TabsTrigger value="hostels">All Hostels</TabsTrigger>
                 <TabsTrigger value="bookings">Bookings</TabsTrigger>
-                <TabsTrigger value="verifications">
-                  Verifications
-                  {pendingVerifications.length > 0 && (
-                    <Badge variant="destructive" className="ml-2 px-1.5 py-0.5 text-xs">
-                      {pendingVerifications.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
                 <TabsTrigger value="messages">
                   Messages
                   {contactMessages.filter(m => !m.read).length > 0 && (
@@ -931,119 +873,6 @@ export default function AdminPage() {
                         <Calendar className="w-16 h-16 mx-auto mb-4 opacity-50" />
                         <p className="text-lg font-medium">No bookings yet</p>
                         <p className="text-sm mt-2">Bookings will appear here once students start booking hostels</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Verifications Tab */}
-              <TabsContent value="verifications">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="flex items-center gap-2">
-                          <Shield className="w-5 h-5" />
-                          Student Verifications
-                        </CardTitle>
-                        <CardDescription>Review and approve student verification requests</CardDescription>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={loadPendingVerifications}
-                        disabled={loadingVerifications}
-                      >
-                        {loadingVerifications ? 'Loading...' : 'Refresh'}
-                      </Button>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {pendingVerifications.length > 0 ? (
-                      <div className="space-y-4">
-                        {pendingVerifications.map((verification) => (
-                          <Card key={verification.id} className="border-primary">
-                            <CardContent className="pt-6">
-                              <div className="space-y-4">
-                                <div className="flex items-start justify-between">
-                                  <div className="space-y-1">
-                                    <h4 className="font-semibold text-lg">{verification.userName}</h4>
-                                    <p className="text-sm text-muted-foreground">{verification.userEmail}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      Submitted: {verification.createdAt?.toDate().toLocaleString()}
-                                    </p>
-                                  </div>
-                                  <Badge variant="secondary">Pending Review</Badge>
-                                </div>
-
-                                <Separator />
-
-                                <div className="grid md:grid-cols-2 gap-4">
-                                  <div>
-                                    <h5 className="font-medium mb-2 flex items-center gap-2">
-                                      <FileText className="w-4 h-4" />
-                                      Aadhaar Card
-                                    </h5>
-                                    <div className="border rounded-lg overflow-hidden">
-                                      <img 
-                                        src={verification.aadhaarCard} 
-                                        alt="Aadhaar Card" 
-                                        className="w-full h-48 object-contain bg-muted"
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div>
-                                    <h5 className="font-medium mb-2 flex items-center gap-2">
-                                      <GraduationCap className="w-4 h-4" />
-                                      College ID
-                                    </h5>
-                                    <div className="border rounded-lg overflow-hidden">
-                                      <img 
-                                        src={verification.collegeId} 
-                                        alt="College ID" 
-                                        className="w-full h-48 object-contain bg-muted"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="flex gap-2 justify-end">
-                                  <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => {
-                                      if (verification.id && confirm('Reject this verification?')) {
-                                        handleRejectVerification(verification.id);
-                                      }
-                                    }}
-                                  >
-                                    <XCircle className="w-4 h-4 mr-1" />
-                                    Reject
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => {
-                                      if (verification.id && confirm('Approve this student?')) {
-                                        handleApproveVerification(verification.id);
-                                      }
-                                    }}
-                                  >
-                                    <CheckCircle2 className="w-4 h-4 mr-1" />
-                                    Approve
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <Shield className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg font-medium">No pending verifications</p>
-                        <p className="text-sm mt-2">Student verification requests will appear here</p>
                       </div>
                     )}
                   </CardContent>

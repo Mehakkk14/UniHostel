@@ -2,6 +2,7 @@ import { Layout } from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserBookings } from '@/lib/bookings';
 import type { Booking } from '@/lib/bookings';
+import { requestNotificationPermission, showNotification, checkNotificationPermission } from '@/lib/notifications';
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -206,8 +207,6 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   </div>
-
-                  <Button variant="outline" disabled>Edit Profile</Button>
                 </div>
               </CardContent>
             </Card>
@@ -493,6 +492,62 @@ export default function ProfilePage() {
                           checked={notifications.promotions}
                           onCheckedChange={(checked) => setNotifications({ ...notifications, promotions: checked })}
                         />
+                      </div>
+                      <Separator />
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label>Browser Push Notifications</Label>
+                          <p className="text-sm text-muted-foreground">Get instant updates in your browser</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Badge variant={checkNotificationPermission() === 'granted' ? 'default' : 'secondary'}>
+                            {checkNotificationPermission() === 'granted' ? 'Enabled' : 
+                             checkNotificationPermission() === 'denied' ? 'Blocked' : 'Not Set'}
+                          </Badge>
+                          {checkNotificationPermission() !== 'granted' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={async () => {
+                                const granted = await requestNotificationPermission();
+                                if (granted) {
+                                  toast({
+                                    title: 'Notifications Enabled',
+                                    description: 'You will now receive browser notifications'
+                                  });
+                                  showNotification('Notifications Enabled! 🔔', {
+                                    body: 'You will now receive updates about your bookings and more.'
+                                  });
+                                } else {
+                                  toast({
+                                    title: 'Permission Denied',
+                                    description: 'Please enable notifications in your browser settings',
+                                    variant: 'destructive'
+                                  });
+                                }
+                              }}
+                            >
+                              Enable
+                            </Button>
+                          )}
+                          {checkNotificationPermission() === 'granted' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                showNotification('Test Notification 🔔', {
+                                  body: 'This is a test notification from UniHostel. You will receive updates like this!'
+                                });
+                                toast({
+                                  title: 'Test notification sent',
+                                  description: 'Check your notifications'
+                                });
+                              }}
+                            >
+                              Test
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <Button onClick={handleSaveNotifications}>Save Preferences</Button>
                     </CardContent>

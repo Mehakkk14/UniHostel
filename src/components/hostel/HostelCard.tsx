@@ -1,9 +1,13 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Star, MapPin, Wifi, Utensils, Snowflake, Car, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Hostel, facilityIcons } from '@/data/hostels';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { toggleWishlist, isInWishlist } from '@/lib/wishlist';
+import { useToast } from '@/hooks/use-toast';
 
 interface HostelCardProps {
   hostel: Hostel;
@@ -18,6 +22,55 @@ const facilityIconComponents: Record<string, React.ReactNode> = {
 };
 
 export function HostelCard({ hostel, index = 0 }: HostelCardProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      checkWishlistStatus();
+    }
+  }, [user, hostel.id]);
+
+  const checkWishlistStatus = async () => {
+    if (!user) return;
+    const inWishlist = await isInWishlist(user.uid, hostel.id);
+    setIsWishlisted(inWishlist);
+  };
+
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      toast({
+        title: 'Login Required',
+        description: 'Please login to add hostels to wishlist',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setWishlistLoading(true);
+    const result = await toggleWishlist(user.uid, hostel);
+    setWishlistLoading(false);
+
+    if (result.success) {
+      setIsWishlisted(!isWishlisted);
+      toast({
+        title: isWishlisted ? 'Removed from Wishlist' : 'Added to Wishlist ❤️',
+        description: result.message,
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const typeColors = {
     boys: 'bg-blue-100 text-blue-700 border-blue-200',
     girls: 'bg-pink-100 text-pink-700 border-pink-200',
@@ -60,8 +113,16 @@ export function HostelCard({ hostel, index = 0 }: HostelCardProps) {
         </div>
 
         {/* Wishlist */}
-        <button className="absolute top-3 right-3 w-9 h-9 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center hover:bg-card transition-colors group/heart">
-          <Heart className="w-5 h-5 text-muted-foreground group-hover/heart:text-destructive transition-colors" />
+        <button 
+          onClick={handleWishlistToggle}
+          disabled={wishlistLoading}
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center hover:bg-card transition-all group/heart disabled:opacity-50 disabled:cursor-not-allowed hover:scale-110"
+        >
+          <Heart className={`w-5 h-5 transition-all ${
+            isWishlisted 
+              ? 'fill-red-500 text-red-500' 
+              : 'text-muted-foreground group-hover/heart:text-red-500'
+          }`} />
         </button>
 
         {/* Price */}
@@ -80,8 +141,8 @@ export function HostelCard({ hostel, index = 0 }: HostelCardProps) {
           </h3>
           <div className="flex items-center gap-1 shrink-0">
             <Star className="w-4 h-4 fill-warning text-warning" />
-            <span className="font-semibold text-sm">{hostel.rating}</span>
-            <span className="text-xs text-muted-foreground">({hostel.reviews})</span>
+            <span className="font-semibold text-sm">{hostel.rating || 0}</span>
+            <span className="text-xs text-muted-foreground">({hostel.reviews || 0})</span>
           </div>
         </div>
 

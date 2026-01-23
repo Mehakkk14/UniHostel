@@ -18,6 +18,7 @@ import HelpCenterPage from "./pages/HelpCenterPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsPage from "./pages/TermsPage";
 import HostelDetailsPage from "./pages/HostelDetailsPage";
+import WishlistPage from "./pages/WishlistPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/list-hostel" element={<ListHostelPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/faqs" element={<FAQPage />} />
             <Route path="/help-center" element={<HelpCenterPage />} />

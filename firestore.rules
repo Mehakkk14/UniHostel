@@ -82,5 +82,38 @@ service cloud.firestore {
       // Users can read and write their own preferences
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
+    
+    // Ratings collection
+    match /ratings/{ratingId} {
+      // Anyone can read ratings
+      allow read: if true;
+      
+      // Authenticated users can create ratings
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Users can update their own ratings
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Only admin can delete ratings
+      allow delete: if request.auth != null && 
+                       request.auth.token.email == 'hello.unihostel@gmail.com';
+    }
+    
+    // Wishlist collection
+    match /wishlist/{wishlistId} {
+      // Users can read their own wishlist, admin can read all
+      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) ||
+                     (request.auth != null && request.auth.token.email == 'hello.unihostel@gmail.com');
+      
+      // Authenticated users can add to their own wishlist
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Users can delete from their own wishlist
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Only admin can update wishlist items
+      allow update: if request.auth != null && 
+                       request.auth.token.email == 'hello.unihostel@gmail.com';
+    }
   }
 }

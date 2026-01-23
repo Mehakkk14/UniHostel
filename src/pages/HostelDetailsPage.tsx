@@ -11,6 +11,10 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { getHostelById } from '@/lib/firestore';
 import { createBooking } from '@/lib/bookings';
+import { getUserRating } from '@/lib/ratings';
+import { toggleWishlist, isInWishlist } from '@/lib/wishlist';
+import { RatingDialog } from '@/components/hostel/RatingDialog';
+import { RatingsList } from '@/components/hostel/RatingsList';
 import { useToast } from '@/hooks/use-toast';
 import type { Hostel } from '@/data/hostels';
 import { 
@@ -33,7 +37,8 @@ import {
   Calendar,
   Upload,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Heart
 } from 'lucide-react';
 
 const facilityIcons: Record<string, any> = {
@@ -64,10 +69,72 @@ export default function HostelDetailsPage() {
     collegeId: ''
   });
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [userRating, setUserRating] = useState<{ rating: number; review: string } | null>(null);
+  const [ratingKey, setRatingKey] = useState(0);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   useEffect(() => {
     loadHostel();
-  }, [id]);
+    if (user && id) {
+      loadUserRating();
+      checkWishlistStatus();
+    }
+  }, [id, user]);
+
+  const checkWishlistStatus = async () => {
+    if (!user || !id) return;
+    const inWishlist = await isInWishlist(user.uid, id);
+    setIsWishlisted(inWishlist);
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!user) {
+      toast({
+        title: 'Login Required',
+        description: 'Please login to add hostels to wishlist',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!hostel) return;
+
+    setWishlistLoading(true);
+    const result = await toggleWishlist(user.uid, hostel);
+    setWishlistLoading(false);
+
+    if (result.success) {
+      setIsWishlisted(!isWishlisted);
+      toast({
+        title: isWishlisted ? 'Removed from Wishlist' : 'Added to Wishlist ❤️',
+        description: result.message,
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const loadUserRating = async () => {
+    if (!user || !id) return;
+    const result = await getUserRating(id, user.uid);
+    if (result.success && result.data) {
+      setUserRating({
+        rating: result.data.rating,
+        review: result.data.review || '',
+      });
+    }
+  };
+
+  const handleRatingSuccess = () => {
+    loadHostel();
+    loadUserRating();
+    setRatingKey(prev => prev + 1); // Force ratings list to reload
+  };
 
   const loadHostel = async () => {
     if (!id) return;
@@ -264,16 +331,39 @@ export default function HostelDetailsPage() {
                 </Badge>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-1">
                   <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
-                  <span className="font-semibold">{hostel.rating}</span>
-                  <span className="text-muted-foreground">({hostel.reviews} reviews)</span>
+                  <span className="font-semibold">{hostel.rating || 0}</span>
+                  <span className="text-muted-foreground">({hostel.reviews || 0} reviews)</span>
                 </div>
                 <Badge variant="outline">{hostel.type}</Badge>
                 <Badge variant={hostel.available ? 'default' : 'secondary'}>
                   {hostel.available ? 'Available' : 'Full'}
                 </Badge>
+                {user && (
+                  <>
+                    <RatingDialog
+                      hostelId={hostel.id}
+                      hostelName={hostel.name}
+                      currentRating={userRating?.rating || 0}
+                      currentReview={userRating?.review || ''}
+                      onSuccess={handleRatingSuccess}
+                    />
+                    <Button 
+                      onClick={handleWishlistToggle}
+                      disabled={wishlistLoading}
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                    >
+                      <Heart className={`w-4 h-4 transition-colors ${
+                        isWishlisted ? 'fill-red-500 text-red-500' : ''
+                      }`} />
+                      {isWishlisted ? 'Saved' : 'Save'}
+                    </Button>
+                  </>
+                )}
               </div>
             </motion.div>
           </div>
@@ -334,6 +424,9 @@ export default function HostelDetailsPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Ratings & Reviews */}
+                <RatingsList key={ratingKey} hostelId={hostel.id} />
 
                 {/* Google Maps Location */}
                 {hostel.googleMapLink && (

@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, LogOut, User, Shield } from 'lucide-react';
+import { Menu, X, LogOut, User, Shield, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/contexts/AuthContext';
 import { logout } from '@/lib/auth';
@@ -107,6 +107,10 @@ export function Navbar() {
                   <DropdownMenuItem onClick={handleProfileClick}>
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/wishlist')}>
+                    <Heart className="mr-2 h-4 w-4" />
+                    <span>Wishlist</span>
                   </DropdownMenuItem>
                   {isAdmin(user.email) && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
